@@ -1,0 +1,18 @@
+# Custom
+wandb
+.vscode
+outputs
+results/figures
+slurm*
+experiments
+checkpoints
+saved_runs
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
