@@ -21,7 +21,7 @@ OmegaConf.register_new_resolver("eval", eval)
 
 
 def download(filename: str) -> Path:
-    path = hf_hub_download(repo_id="eloialonso/diamond", filename=filename)
+    path = hf_hub_download(repo_id="zLPwHqz4cu6JkNUY/diamond", filename=filename)
     return Path(path)
 
 
@@ -54,7 +54,7 @@ def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEn
     # Checkpoint
     if args.pretrained:
         name = prompt_atari_game()
-        path_ckpt = download(f"atari_100k/{name}.pt")
+        path_ckpt = download(f"{name}.pt")
         
         # Override config
         cfg.agent = OmegaConf.load(download("default_agent_config.yaml"))

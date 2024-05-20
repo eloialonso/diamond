@@ -26,19 +26,11 @@
   - [Other options, common to play/dataset modes](#other_options)
 - [Run folder structure](#structure)
 - [Results](#results)
-- [Citation](#citation)
 - [Credits](#credits)
 
 
 <a name="installation"></a>
 ## [⬆️](#quick_links) Installation
-
-Clone this repository:
-
-```bash
-git clone git@github.com:eloialonso/diamond.git
-cd diamond
-```
 
 We recommend using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/) to create a new environment:
 
@@ -62,7 +54,7 @@ pip install -r requirements.txt
 python src/play.py --pretrained
 ```
 
-Then select a game, and world model and policy pretrained on Atari 100k will be downloaded from our [repository on Hugging Face Hub 🤗](https://huggingface.co/eloialonso/diamond) and cached on your machine.
+Then select a game, and world model and policy pretrained on Atari 100k will be downloaded from our [repository on Hugging Face Hub 🤗](https://huggingface.co/zLPwHqz4cu6JkNUY/diamond) and cached on your machine.
 
 First things you might want to try:
 - Press `m` to take control (the policy is playing by default).
@@ -216,13 +208,6 @@ outputs/YYYY-MM-DD/hh-mm-ss/
 ## [⬆️](#quick_links) Results
 
 The file [results/data/DIAMOND.json](results/data/DIAMOND.json) contains the results for each game and seed used in the paper.
-
-<a name="citation"></a>
-## [⬆️](#quick-links) Citation
-
-```text
-TODO
-```
 
 <a name="credits"></a>
 ## [⬆️](#quick_links) Credits
