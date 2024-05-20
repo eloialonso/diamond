@@ -13,6 +13,7 @@
   <img alt="DIAMOND's world model in Breakout, Pong, KungFuMaster, Boxing, Asterix" src="assets/main.gif">
 </div>
 
+<a name="quick_links"></a>
 ## Quick Links
 
 - [Installation](#installation)
@@ -30,7 +31,7 @@
 
 
 <a name="installation"></a>
-## [⬆️](#quick-links) Installation
+## [⬆️](#quick_links) Installation
 
 Clone this repository:
 
@@ -55,7 +56,7 @@ pip install -r requirements.txt
 **Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
 
 <a name="try"></a>
-## [⬆️](#quick-links) Try our playable diffusion world models
+## [⬆️](#quick_links) Try our playable diffusion world models
 
 ```bash
 python src/play.py --pretrained
@@ -72,7 +73,7 @@ To adjust the sampling parameters (number of denoising steps, stochasticity, ord
 See [Visualization](#visualization) for more details about the available commands and options.
 
 <a name="launch"></a>
-## [⬆️](#quick-links) Launch a training run
+## [⬆️](#quick_links) Launch a training run
 
 To train with the hyperparameters used in the paper, launch:
 ```bash
@@ -88,7 +89,7 @@ To resume a run that crashed, navigate to the fun folder and launch:
 ```
 
 <a name="configuration"></a>
-## [⬆️](#quick-links) Configuration
+## [⬆️](#quick_links) Configuration
 
 We use [Hydra](https://github.com/facebookresearch/hydra) for configuration management.
 
@@ -103,10 +104,10 @@ You can turn on logging to [weights & biases](https://wandb.ai) in the `wandb` s
 Set `training.model_free=true` in the file `config/trainer.yaml` to "unplug" the world model and perform standard model-free reinforcement learning.
 
 <a name="visualization"></a>
-## [⬆️](#quick-links) Visualization
+## [⬆️](#quick_links) Visualization
 
 <a name="play_mode"></a>
-### [⬆️](#quick-links) Play mode (default)
+### [⬆️](#quick_links) Play mode (default)
 
 To visualize your last checkpoint, launch **from the run folder**:
 
@@ -140,7 +141,7 @@ Add `-r` to toggle "recording mode" (works only in play mode). Every completed e
 You can then use the "dataset mode" described in the next section to replay the stored episodes.
 
 <a name="dataset_mode"></a>
-### [⬆️](#quick-links) Dataset mode (add `-d`)
+### [⬆️](#quick_links) Dataset mode (add `-d`)
 
 **In the run folder**, to visualize the datasets contained in the `dataset` subfolder, add `-d` to switch to "dataset mode":
 
@@ -162,7 +163,7 @@ PgDn: -10 timesteps
 ```
 
 <a name="other_options"></a>
-### [⬆️](#quick-links) Other options, common to play/dataset modes
+### [⬆️](#quick_links) Other options, common to play/dataset modes
 
 ```txt
 --fps FPS             Target frame rate (default 15).
@@ -171,7 +172,7 @@ PgDn: -10 timesteps
 ```
 
 <a name="structure"></a>
-## [⬆️](#quick-links) Run folder structure
+## [⬆️](#quick_links) Run folder structure
 
 Each new run is located at `outputs/YYYY-MM-DD/hh-mm-ss/`. This folder is structured as follows:
 
@@ -212,9 +213,9 @@ outputs/YYYY-MM-DD/hh-mm-ss/
 ```
 
 <a name="results"></a>
-## [⬆️](#quick-links) Results
+## [⬆️](#quick_links) Results
 
-The file `./results/data/DIAMOND.json` contains the results for each game and seed used in the paper.
+The file [results/data/DIAMOND.json](results/data/DIAMOND.json) contains the results for each game and seed used in the paper.
 
 <a name="citation"></a>
 ## [⬆️](#quick-links) Citation
@@ -224,7 +225,7 @@ TODO
 ```
 
 <a name="credits"></a>
-## [⬆️](#quick-links) Credits
+## [⬆️](#quick_links) Credits
 
 - [https://github.com/crowsonkb/k-diffusion/](https://github.com/crowsonkb/k-diffusion/)
 - [https://github.com/huggingface/huggingface_hub](https://github.com/huggingface/huggingface_hub)
