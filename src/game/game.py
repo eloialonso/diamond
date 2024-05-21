@@ -4,7 +4,6 @@ import numpy as np
 import pygame
 from PIL import Image
 
-# TODO
 from .dataset_env import DatasetEnv
 from .keymap import Keymap
 from .play_env import PlayEnv
