@@ -38,6 +38,7 @@ Download the repository:
 mkdir diamond
 cd diamond
 wget -c https://anonymous.4open.science/api/repo/_diamond/zip -O tmp.zip
+# curl https://anonymous.4open.science/api/repo/_diamond/zip -o tmp.zip   # if you do not have wget but do have curl 
 unzip tmp.zip
 rm tmp.zip
 ```
