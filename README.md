@@ -32,6 +32,16 @@
 <a name="installation"></a>
 ## [⬆️](#quick_links) Installation
 
+Download the repository:
+
+```bash
+mkdir diamond
+cd diamond
+wget -c https://anonymous.4open.science/api/repo/_diamond/zip -O tmp.zip
+unzip tmp.zip
+rm tmp.zip
+```
+
 We recommend using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/) to create a new environment:
 
 ```bash
