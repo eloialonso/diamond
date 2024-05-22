@@ -221,7 +221,14 @@ The file [results/data/DIAMOND.json](results/data/DIAMOND.json) contains the res
 ## [⬆️](#quick-links) Citation
 
 ```text
-TODO
+@misc{alonso2024diffusion,
+      title={Diffusion for World Modeling: Visual Details Matter in Atari}, 
+      author={Eloi Alonso and Adam Jelley and Vincent Micheli and Anssi Kanervisto and Amos Storkey and Tim Pearce and François Fleuret},
+      year={2024},
+      eprint={2405.12399},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
 ```
 
 <a name="credits"></a>
