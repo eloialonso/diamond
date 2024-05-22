@@ -55,9 +55,9 @@ python src/play.py --pretrained
 
 Then select a game, and world model and policy pretrained on Atari 100k will be downloaded from our [repository on Hugging Face Hub 🤗](https://huggingface.co/eloialonso/diamond) and cached on your machine.
 
-First things you might want to try:
-- Press `m` to take control (the policy is playing by default).
-- Press `↑` to increase the imagination horizon (default is 15, which is frustrating when playing yourself).
+Some things you might want to try:
+- Press `m` to change the policy between the agent and human (the policy is playing by default).
+- Press `↑/↓` to change the imagination horizon (default is 50 for playing).
 
 To adjust the sampling parameters (number of denoising steps, stochasticity, order, etc) of the trained diffusion world model, for instance to trade off sampling speed and quality, edit the section `world_model_env.diffusion_sampler` in the file `config/trainer.yaml`.
 

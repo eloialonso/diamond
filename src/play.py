@@ -73,11 +73,12 @@ def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEn
     if args.pretrained:
         name = prompt_atari_game()
         path_ckpt = download(f"atari_100k/{name}.pt")
-        
+
         # Override config
         cfg.agent = OmegaConf.load(download("config/agent/default.yaml"))
         cfg.env = OmegaConf.load(download("config/env/atari.yaml"))
         cfg.env.train.id = cfg.env.test.id = f"{name}NoFrameskip-v4"
+        cfg.world_model_env.horizon = 50
     else:
         path_ckpt = get_path_agent_ckpt("checkpoints", epoch=-1)
 
