@@ -3,8 +3,8 @@
 **TL;DR** We introduce DIAMOND (DIffusion As a Model Of eNvironment Dreams), a reinforcement learning agent trained in a diffusion world model.
 
 <div align='center'>
-  DIAMOND agent after the equivalent to 2h of real-time experience (100k environment steps)
-<img alt="DIAMOND agent" src="assets/diamond_agent.gif">
+  Autoregressive imagination with DIAMOND on a subset of Atari games
+<img alt="DIAMOND agent in WM" src="assets/main.gif">
 </div>
 
 >[Install](#installation), then try our [pretrained world models](#try)!
