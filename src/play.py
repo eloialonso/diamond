@@ -39,6 +39,22 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def check_args(args: argparse.Namespace) -> None:
+    if args.dataset_mode:
+        if not Path("dataset").is_dir():
+            print(f"Error: {str(Path('dataset').absolute())} not found, cannot use dataset mode.")
+            return False
+        if Path(".git").is_dir():
+            print("Error: cannot run dataset mode the root of the repository.")
+            return False
+        if args.pretrained or args.record:
+            print("Warning: dataset mode, ignoring --pretrained and --record")
+    else:
+        if not args.record and (args.store_denoising_trajectory or args.store_original_obs):
+            print("Warning: not in recording mode, ignoring --store* options")
+    return True
+
+
 def prepare_dataset_mode(cfg: DictConfig) -> Tuple[DatasetEnv, Keymap, ActionNames]:
     datasets = []
     for p in Path("dataset").iterdir():
@@ -114,15 +130,9 @@ def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEn
 @torch.no_grad()
 def main():
     args = parse_args()
-    if args.dataset_mode:
-        if not Path("dataset").is_dir():
-            print(f"Error: {str(Path('dataset').absolute())} not found, cannot use dataset mode.")
-            return
-        if Path(".git").is_dir():
-            print(f"Error: cannot run dataset mode the root of the repository.")
-            return
-        if args.pretrained or args.record:
-            print("Warning: dataset mode, ignoring --pretrained and --record")
+    ok = check_args(args)
+    if not ok:
+        return
 
     with initialize(version_base="1.3", config_path="../config"):
         cfg = compose(config_name="trainer")
