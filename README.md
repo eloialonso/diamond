@@ -7,16 +7,33 @@
 <img alt="DIAMOND agent in WM" src="assets/main.gif">
 </div>
 
->[Install](#installation), then try our [pretrained world models](#try)!
->
+Quick install to try our [pretrained world models](#try) using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/):
+
 >```bash
+>git clone git@github.com:eloialonso/diamond.git
+>cd diamond
+>conda create -n diamond python=3.10
+>conda activate diamond
+>pip install -r requirements.txt
 >python src/play.py --pretrained
 >```
+
+Alternatively, if you do not have miniconda installed you can use python [venv](https://docs.python.org/3/library/venv.html):
+>```bash
+>git clone git@github.com:eloialonso/diamond.git
+>cd diamond
+>python3 -m venv diamond_env
+>source activate ./diamond_env/bin/
+>pip install -r requirements.txt
+>python src/play.py --pretrained
+>```
+And press `m` to take control (the policy is playing by default)!
+
+**Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
 
 <a name="quick_links"></a>
 ## Quick Links
 
-- [Installation](#installation)
 - [Try our playable diffusion world models](#try)
 - [Launch a training run](#launch)
 - [Configuration](#configuration)
@@ -28,32 +45,6 @@
 - [Results](#results)
 - [Citation](#citation)
 - [Credits](#credits)
-
-
-<a name="installation"></a>
-## [⬆️](#quick_links) Installation
-
-Clone this repository:
-
-```bash
-git clone git@github.com:eloialonso/diamond.git
-cd diamond
-```
-
-We recommend using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/) to create a new environment:
-
-```bash
-conda create -n diamond python=3.10
-conda activate diamond
-```
-
-Install dependencies listed in [requirements.txt](requirements.txt):
-
-```bash
-pip install -r requirements.txt
-```
-
-**Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
 
 <a name="try"></a>
 ## [⬆️](#quick_links) Try our playable diffusion world models
@@ -154,7 +145,7 @@ You can use the controls described below to navigate the datasets and episodes.
 ```txt
 Controls (dataset mode)
 
-m   : next dataset (if multiple datasets, like recordings, etc) 
+m   : next dataset (if multiple datasets, like recordings, etc)
 ↑/↓ : next/previous episode
 ←/→ : next/previous timestep in episodes
 PgUp: +10 timesteps
@@ -222,7 +213,7 @@ The file [results/data/DIAMOND.json](results/data/DIAMOND.json) contains the res
 
 ```text
 @misc{alonso2024diffusion,
-      title={Diffusion for World Modeling: Visual Details Matter in Atari}, 
+      title={Diffusion for World Modeling: Visual Details Matter in Atari},
       author={Eloi Alonso and Adam Jelley and Vincent Micheli and Anssi Kanervisto and Amos Storkey and Tim Pearce and François Fleuret},
       year={2024},
       eprint={2405.12399},
