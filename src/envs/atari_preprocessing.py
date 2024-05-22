@@ -2,6 +2,7 @@
 Derived from https://github.com/openai/gym/blob/master/gym/wrappers/atari_preprocessing.py
 Implementation of Atari 2600 Preprocessing following the guidelines of Machado et al., 2018.
 """
+
 from __future__ import annotations
 
 from typing import Any, SupportsFloat
@@ -86,7 +87,10 @@ class AtariPreprocessing(gym.Wrapper, gym.utils.RecordConstructorArgs):
 
         info["life_loss"] = life_loss
 
-        return self._get_obs(), total_reward, terminated, truncated, info
+        obs, original_obs = self._get_obs()
+        info["original_obs"] = original_obs
+
+        return obs, total_reward, terminated, truncated, info
 
     def reset(
         self, *, seed: int | None = None, options: dict[str, Any] | None = None
@@ -108,18 +112,22 @@ class AtariPreprocessing(gym.Wrapper, gym.utils.RecordConstructorArgs):
         self.ale.getScreenRGB(self.obs_buffer[0])
         self.obs_buffer[1].fill(0)
 
-        return self._get_obs(), reset_info
+        obs, original_obs = self._get_obs()
+        reset_info["original_obs"] = original_obs
+
+        return obs, reset_info
 
     def _get_obs(self):
         if self.frame_skip > 1:  # more efficient in-place pooling
             np.maximum(self.obs_buffer[0], self.obs_buffer[1], out=self.obs_buffer[0])
 
+        original_obs = self.obs_buffer[0]
         obs = cv2.resize(
-            self.obs_buffer[0],
+            original_obs,
             (self.screen_size, self.screen_size),
             interpolation=cv2.INTER_AREA,
         )
 
         obs = np.asarray(obs, dtype=np.uint8)
 
-        return obs
+        return obs, original_obs

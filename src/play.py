@@ -31,6 +31,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-d", "--dataset-mode", action="store_true", help="Dataset visualization mode.")
     parser.add_argument("-r", "--record", action="store_true", help="Record episodes in PlayEnv.")
     parser.add_argument("-n", "--num-steps-initial-collect", type=int, default=1000, help="Num steps initial collect.")
+    parser.add_argument("--store-denoising-trajectory", action="store_true", help="Save denoising steps in info.")
+    parser.add_argument("--store-original-obs", action="store_true", help="Save original obs (pre resizing) in info.")
     parser.add_argument("--fps", type=int, default=15, help="Frame rate.")
     parser.add_argument("--size", type=int, default=640, help="Window size.")
     parser.add_argument("--no-header", action="store_true")
@@ -96,7 +98,15 @@ def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEn
     ]
 
     env_keymap, env_action_names = get_keymap_and_action_names(cfg.env.keymap)
-    play_env = PlayEnv(agent, envs, env_action_names, env_keymap, args.record)
+    play_env = PlayEnv(
+        agent,
+        envs,
+        env_action_names,
+        env_keymap,
+        args.record,
+        args.store_denoising_trajectory,
+        args.store_original_obs,
+    )
 
     return play_env, env_keymap
 

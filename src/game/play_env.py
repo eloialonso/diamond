@@ -19,13 +19,22 @@ OneStepData = namedtuple("OneStepData", "obs act rew end trunc")
 
 class PlayEnv:
     def __init__(
-        self, agent: Agent, envs: List[NamedEnv], action_names: ActionNames, keymap: Keymap, recording_mode: bool
+        self,
+        agent: Agent,
+        envs: List[NamedEnv],
+        action_names: ActionNames,
+        keymap: Keymap,
+        recording_mode: bool,
+        store_denoising_trajectory: bool,
+        store_original_obs: bool,
     ) -> None:
         self.agent = agent
         self.envs = envs
         self.action_names = action_names
         self.keymap = keymap
         self.recording_mode = recording_mode
+        self.store_denoising_trajectory = store_denoising_trajectory
+        self.store_original_obs = store_original_obs
         self.is_human_player = False
         self.env_id = 0
         self.env_name, self.env = self.envs[0]
@@ -54,7 +63,7 @@ class PlayEnv:
     def prev_axis_1(self) -> bool:
         self.update_wm_horizon(-1)
         return True
-    
+
     def next_axis_2(self) -> bool:
         self.switch_env(self.env_id + 1)
         return True
@@ -142,8 +151,11 @@ class PlayEnv:
         if self.recording_mode:
             for k, v in data._asdict().items():
                 self.buffer[k].append(v)
-            if "denoising_trajectory" in env_info:
+            if self.store_denoising_trajectory and "denoising_trajectory" in env_info:
                 self.buffer["info"]["denoising_trajectory"].append(env_info["denoising_trajectory"])
+            if self.store_original_obs and "original_obs" in env_info:
+                original_obs = (torch.tensor(env_info["original_obs"][0]).permute(2, 0, 1).unsqueeze(0).contiguous())
+                self.buffer["info"]["original_obs"].append(original_obs)
             if end or trunc:
                 ep_dict = {k: torch.cat(v, dim=0) for k, v in self.buffer.items() if k != "info"}
                 ep_info = {k: torch.cat(v, dim=0) for k, v in self.buffer["info"].items()}
