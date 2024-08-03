@@ -64,21 +64,12 @@ world_model_env:
   _target_: envs.WorldModelEnvConfig
   horizon: 15
   num_batches_to_preload: 256
-  diffusion_sampler:
-    _target_: models.diffusion.DiffusionSamplerConfig
+  ddpm_sampler:
+    _target_: models.diffusion.DDPMSamplerConfig
     num_steps_denoising: 3
-    sigma_min: 2e-3
-    sigma_max: 5.0
-    rho: 7
-    order: 1  # 1: Euler, 2: Heun
-    s_churn: 0.0  # Amount of stochasticity
-    s_tmin: 0.0
-    s_tmax: ${eval:'float("inf")'}
-    s_noise: 1.0
 
 denoiser:
   training:
-    num_autoregressive_steps: 1
     start_after_epochs: 0
     steps_first_epoch: 10000
     steps_per_epoch: 400
@@ -93,13 +84,6 @@ denoiser:
     weight_decay: 1e-2
     eps: 1e-8
   
-  sigma_distribution: # log normal distribution for sigma during training
-    _target_: models.diffusion.SigmaDistributionConfig
-    loc: -0.4
-    scale: 1.2
-    sigma_min: 2e-3
-    sigma_max: 20
-
 rew_end_model:
   training:
     seq_length: ${eval:'${world_model_env.horizon} + ${agent.denoiser.inner_model.num_steps_conditioning}'}

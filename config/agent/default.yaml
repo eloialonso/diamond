@@ -1,9 +1,9 @@
 _target_: agent.AgentConfig
 
 denoiser:
-  _target_: models.diffusion.DenoiserConfig
-  sigma_data: 0.5
+  _target_: models.diffusion.DDPMDenoiserConfig
   sigma_offset_noise: 0.3
+  num_train_timesteps: 1000
   inner_model:
     _target_: models.diffusion.InnerModelConfig
     img_channels: 3

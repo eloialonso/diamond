@@ -139,7 +139,7 @@ class Trainer(StateDictMixin):
         )
 
         c = cfg.denoiser.training
-        seq_length = cfg.agent.denoiser.inner_model.num_steps_conditioning + 1 + c.num_autoregressive_steps
+        seq_length = cfg.agent.denoiser.inner_model.num_steps_conditioning + 1
         bs = BatchSampler(self.train_dataset, c.batch_size, seq_length, c.sample_weights)
         dl_denoiser_train = make_data_loader(batch_sampler=bs)
         dl_denoiser_test = DatasetTraverser(self.test_dataset, c.batch_size, seq_length)
@@ -170,9 +170,8 @@ class Trainer(StateDictMixin):
                 rl_env.predict_rew_end = torch.compile(rl_env.predict_rew_end, mode="reduce-overhead")
 
         # Setup training
-        sigma_distribution_cfg = instantiate(cfg.denoiser.sigma_distribution)
         actor_critic_loss_cfg = instantiate(cfg.actor_critic.actor_critic_loss)
-        self.agent.setup_training(sigma_distribution_cfg, actor_critic_loss_cfg, rl_env)
+        self.agent.setup_training(actor_critic_loss_cfg, rl_env)
 
         # Training state (things to be saved/restored)
         self.epoch = 0

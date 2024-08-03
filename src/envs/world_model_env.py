@@ -7,7 +7,7 @@ from torch.distributions.categorical import Categorical
 from torch.utils.data import DataLoader
 
 from coroutines import coroutine
-from models.diffusion import Denoiser, DiffusionSampler, DiffusionSamplerConfig
+from models.diffusion import DDPMDenoiser, DDPMSampler, DDPMSamplerConfig
 from models.rew_end_model import RewEndModel
 
 ResetOutput = Tuple[torch.FloatTensor, Dict[str, Any]]
@@ -19,19 +19,19 @@ InitialCondition = Tuple[Tensor, Tensor, Tuple[Tensor, Tensor]]
 class WorldModelEnvConfig:
     horizon: int
     num_batches_to_preload: int
-    diffusion_sampler: DiffusionSamplerConfig
+    ddpm_sampler: DDPMSamplerConfig
 
 
 class WorldModelEnv:
     def __init__(
         self,
-        denoiser: Denoiser,
+        denoiser: DDPMDenoiser,
         rew_end_model: RewEndModel,
         data_loader: DataLoader,
         cfg: WorldModelEnvConfig,
         return_denoising_trajectory: bool = False,
     ) -> None:
-        self.sampler = DiffusionSampler(denoiser, cfg.diffusion_sampler)
+        self.sampler = DDPMSampler(denoiser, cfg.ddpm_sampler)
         self.rew_end_model = rew_end_model
         self.horizon = cfg.horizon
         self.return_denoising_trajectory = return_denoising_trajectory

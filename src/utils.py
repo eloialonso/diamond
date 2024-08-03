@@ -75,7 +75,6 @@ class StateDictMixin:
         for k, v in state_dict.items():
             self._set_field(k, v)
 
-
 @dataclass
 class CommonTools(StateDictMixin):
     denoiser: Any

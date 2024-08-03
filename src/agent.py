@@ -7,14 +7,14 @@ import torch.nn as nn
 
 from envs import TorchEnv, WorldModelEnv
 from models.actor_critic import ActorCritic, ActorCriticConfig, ActorCriticLossConfig
-from models.diffusion import Denoiser, DenoiserConfig, SigmaDistributionConfig
+from models.diffusion import DDPMDenoiser, DDPMDenoiserConfig
 from models.rew_end_model import RewEndModel, RewEndModelConfig
 from utils import extract_state_dict
 
 
 @dataclass
 class AgentConfig:
-    denoiser: DenoiserConfig
+    denoiser: DDPMDenoiserConfig
     rew_end_model: RewEndModelConfig
     actor_critic: ActorCriticConfig
     num_actions: int
@@ -28,7 +28,7 @@ class AgentConfig:
 class Agent(nn.Module):
     def __init__(self, cfg: AgentConfig) -> None:
         super().__init__()
-        self.denoiser = Denoiser(cfg.denoiser)
+        self.denoiser = DDPMDenoiser(cfg.denoiser)
         self.rew_end_model = RewEndModel(cfg.rew_end_model)
         self.actor_critic = ActorCritic(cfg.actor_critic)
 
@@ -38,11 +38,9 @@ class Agent(nn.Module):
 
     def setup_training(
         self,
-        sigma_distribution_cfg: SigmaDistributionConfig,
         actor_critic_loss_cfg: ActorCriticLossConfig,
         rl_env: Union[TorchEnv, WorldModelEnv],
     ) -> None:
-        self.denoiser.setup_training(sigma_distribution_cfg)
         self.actor_critic.setup_training(rl_env, actor_critic_loss_cfg)
 
     def load(

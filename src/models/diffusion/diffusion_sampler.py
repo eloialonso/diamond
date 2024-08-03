@@ -4,63 +4,57 @@ from typing import List, Tuple
 import torch
 from torch import Tensor
 
-from .denoiser import Denoiser
+from .denoiser import DDPMDenoiser
+
+
+def add_dims(input: Tensor, n: int) -> Tensor:
+    return input.reshape(input.shape + (1,) * (n - input.ndim))
 
 
 @dataclass
-class DiffusionSamplerConfig:
+class DDPMSamplerConfig:
     num_steps_denoising: int
-    sigma_min: float = 2e-3
-    sigma_max: float = 5
-    rho: int = 7
-    order: int = 1
-    s_churn: float = 0
-    s_tmin: float = 0
-    s_tmax: float = float("inf")
-    s_noise: float = 1
 
 
-class DiffusionSampler:
-    def __init__(self, denoiser: Denoiser, cfg: DiffusionSamplerConfig):
+class DDPMSampler:
+    def __init__(self, denoiser: DDPMDenoiser, cfg: DDPMSamplerConfig):
         self.denoiser = denoiser
         self.cfg = cfg
-        self.sigmas = build_sigmas(cfg.num_steps_denoising, cfg.sigma_min, cfg.sigma_max, cfg.rho, denoiser.device)
 
     @torch.no_grad()
     def sample_next_obs(self, obs: Tensor, act: Tensor) -> Tuple[Tensor, List[Tensor]]:
         device = obs.device
+        scheduler = self.denoiser.ddpm_scheduler
         b, t, c, h, w = obs.size()
         obs = obs.reshape(b, t * c, h, w)
-        s_in = torch.ones(b, device=device)
-        gamma_ = min(self.cfg.s_churn / (len(self.sigmas) - 1), 2**0.5 - 1)
         x = torch.randn(b, c, h, w, device=device)
         trajectory = [x]
-        for sigma, next_sigma in zip(self.sigmas[:-1], self.sigmas[1:]):
-            gamma = gamma_ if self.cfg.s_tmin <= sigma <= self.cfg.s_tmax else 0
-            sigma_hat = sigma * (gamma + 1)
-            if gamma > 0:
-                eps = torch.randn_like(x) * self.cfg.s_noise
-                x = x + eps * (sigma_hat**2 - sigma**2) ** 0.5
-            denoised = self.denoiser.denoise(x, sigma, obs, act)
-            d = (x - denoised) / sigma_hat
-            dt = next_sigma - sigma_hat
-            if self.cfg.order == 1 or next_sigma == 0:
-                # Euler method
-                x = x + d * dt
-            else:
-                # Heun's method
-                x_2 = x + d * dt
-                denoised_2 = self.denoiser.denoise(x_2, next_sigma * s_in, obs, act)
-                d_2 = (x_2 - denoised_2) / next_sigma
-                d_prime = (d + d_2) / 2
-                x = x + d_prime * dt
-            trajectory.append(x)
-        return x, trajectory
 
-
-def build_sigmas(num_steps: int, sigma_min: float, sigma_max: float, rho: int, device: torch.device) -> Tensor:
-    min_inv_rho = sigma_min ** (1 / rho)
-    max_inv_rho = sigma_max ** (1 / rho)
-    l = torch.linspace(0, 1, num_steps, device=device)
-    sigmas = (max_inv_rho + l * (min_inv_rho - max_inv_rho)) ** rho
-    return torch.cat((sigmas, sigmas.new_zeros(1)))
+        # Default DDPM with 1-step denoising would set `timestep = num_train_timesteps`.
+        # We found that the network learnt identity function when timestep is set to high values,
+        # since it has to predict the noise (more details in section 5.1 of our paper - https://arxiv.org/pdf/2405.12399).
+        # We found experimentally that the best 1-step setup for DDPM was to use `timestep = num_train_timesteps // 2` instead.
+        if self.cfg.num_steps_denoising == 1:
+            half = scheduler.config.num_train_timesteps // 2
+            timestep_ = torch.full(fill_value=half, size=(b,), dtype=torch.long, device=device)
+            predicted_noise = self.denoiser(x, timestep_, obs, act)
+            
+            alphas_cumprod = scheduler.alphas_cumprod.to(device)[timestep_]
+            sqrt_alpha_prod = add_dims(alphas_cumprod ** 0.5, x.ndim)
+            sqrt_one_minus_alpha_prod = add_dims((1 - alphas_cumprod) ** 0.5, x.ndim)
+            denoised = (x - sqrt_one_minus_alpha_prod * predicted_noise) / sqrt_alpha_prod
+            # Quantize to {0, ..., 255}, then back to [-1, 1]
+            denoised = denoised.clamp(-1, 1).add(1).div(2).mul(255).byte().div(255).mul(2).sub(1)
+            
+            trajectory.append(denoised)
+            return denoised, trajectory
+        
+        else:
+            scheduler.set_timesteps(self.cfg.num_steps_denoising)
+            for timestep in scheduler.timesteps:
+                timestep_ = torch.full(fill_value=timestep, size=(b,), device=device)
+                predicted_noise = self.denoiser(x, timestep_, obs, act)
+                x = scheduler.step(predicted_noise, timestep, x).prev_sample
+                trajectory.append(x)
+            x = x.clamp(-1, 1).add(1).div(2).mul(255).byte().div(255).mul(2).sub(1)
+            return x, trajectory
