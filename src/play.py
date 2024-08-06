@@ -31,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-d", "--dataset-mode", action="store_true", help="Dataset visualization mode.")
     parser.add_argument("-r", "--record", action="store_true", help="Record episodes in PlayEnv.")
     parser.add_argument("-n", "--num-steps-initial-collect", type=int, default=1000, help="Num steps initial collect.")
+    parser.add_argument("-c", "--pick-checkpoint", action="store_true", help="Display a list of checkpoints to choose from.")
     parser.add_argument("--fps", type=int, default=15, help="Frame rate.")
     parser.add_argument("--size", type=int, default=640, help="Window size.")
     parser.add_argument("--no-header", action="store_true")
@@ -53,6 +54,8 @@ def prepare_dataset_mode(cfg: DictConfig) -> Tuple[DatasetEnv, Keymap, ActionNam
 def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEnv, Keymap, ActionNames]:
     # Checkpoint
     if args.pretrained:
+        if args.pick_checkpoint:
+            print("Warning: --pretrained is on, ignoring --pick-checkpoint")
         name = prompt_atari_game()
         path_ckpt = download(f"{name}.pt")
         
@@ -61,7 +64,8 @@ def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEn
         cfg.env = OmegaConf.load(download("default_atari_config.yaml"))
         cfg.env.train.id = cfg.env.test.id = f"{name}NoFrameskip-v4"
     else:
-        path_ckpt = get_path_agent_ckpt("checkpoints", epoch=-1)
+        epoch = int(input("Enter the checkpoint you want to load: epoch=")) if args.pick_checkpoint else -1
+        path_ckpt = get_path_agent_ckpt("checkpoints", epoch=epoch)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
