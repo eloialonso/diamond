@@ -208,6 +208,8 @@ outputs/YYYY-MM-DD/hh-mm-ss/
 
 The file [results/data/DIAMOND.json](results/data/DIAMOND.json) contains the results for each game and seed used in the paper.
 
+The DDPM code used for Section 5.1 of the paper can be found on the [ddpm](https://github.com/eloialonso/diamond/tree/ddpm) branch.
+
 <a name="citation"></a>
 ## [⬆️](#quick-links) Citation
 
