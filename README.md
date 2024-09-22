@@ -4,7 +4,7 @@
 
 <div align='center'>
   Autoregressive imagination with DIAMOND on a subset of Atari games
-<img alt="DIAMOND agent in WM" src="assets/main.gif">
+  <img alt="DIAMOND agent in WM" src="https://github.com/user-attachments/assets/c991cc3a-7c8a-44b0-826a-fb8177f27545">
 </div>
 
 Quick install to try our [pretrained world models](#try) using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/):
