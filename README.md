@@ -1,6 +1,8 @@
-# Diffusion for World Modeling: Visual Details Matter in Atari
+# Diffusion for World Modeling: Visual Details Matter in Atari (NeurIPS 2024 Spotlight)
 
 **TL;DR** We introduce DIAMOND (DIffusion As a Model Of eNvironment Dreams), a reinforcement learning agent trained in a diffusion world model.
+
+[[Project Page]](https://diamond-wm.github.io) &nbsp; [[Paper]](https://arxiv.org/abs/2405.12399)
 
 <div align='center'>
   Autoregressive imagination with DIAMOND on a subset of Atari games
@@ -40,6 +42,9 @@ And press `m` to take control (the policy is playing by default)!
 git checkout csgo
 python src/play.py
 ```
+> Note on Apple Silicon you must enable CPU fallback for MPS backend with
+> PYTORCH_ENABLE_MPS_FALLBACK=1 python src/play.py
+
 
 <a name="quick_links"></a>
 ## Quick Links
