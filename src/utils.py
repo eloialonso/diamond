@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from dataclasses import dataclass
 from functools import partial
+import json
 from pathlib import Path
 import random
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -260,8 +261,8 @@ def prompt_run_name(game):
 
 
 def save_info_for_import_script(epoch: int, run_name: str, path_ckpt_dir: Path) -> None:
-    info = {"epoch": epoch, "name": run_name}
-    save_with_backup(info, path_ckpt_dir / "info_for_import_script.pt")
+    with (path_ckpt_dir / "info_for_import_script.json").open("w") as f:
+        json.dump({"epoch": epoch, "name": run_name}, f)
 
 
 def save_with_backup(obj: Any, path: Path):
