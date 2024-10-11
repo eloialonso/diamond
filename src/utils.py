@@ -1,3 +1,5 @@
+
+from argparse import Namespace
 from collections import OrderedDict
 from dataclasses import dataclass
 from functools import partial
@@ -9,9 +11,11 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from omegaconf import OmegaConf
 import numpy as np
 import torch
+import torch.distributed as dist
 from torch import Tensor
 from torch.optim.lr_scheduler import LambdaLR
 import torch.nn as nn
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import AdamW
 import wandb
 
@@ -47,7 +51,7 @@ ATARI_100K_GAMES = [
 
 
 Logs = List[Dict[str, float]]
-ComputeLossOutput = Tuple[Tensor, Dict[str, Any]]
+LossAndLogs = Tuple[Tensor, Dict[str, Any]]
 
 
 class StateDictMixin:
@@ -88,6 +92,18 @@ class CommonTools(StateDictMixin):
 
     def set(self, name: str, value: Any):
         return setattr(self, name, value)
+
+
+def broadcast_if_needed(*args):
+    objects = list(args)
+    if dist.is_initialized():
+        dist.broadcast_object_list(objects, src=0) 
+        # the list `objects` now contains the version of rank 0
+    return objects
+
+
+def build_ddp_wrapper(**modules_dict: Dict[str, nn.Module]) -> Namespace:
+    return Namespace(**{name: DDP(module) for name, module in modules_dict.items()})
 
 
 def compute_classification_metrics(confusion_matrix: Tensor) -> Tuple[Tensor, Tensor, Tensor]:

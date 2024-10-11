@@ -184,6 +184,7 @@ class UNet(nn.Module):
     def __init__(self, cond_channels: int, depths: List[int], channels: List[int], attn_depths: List[int]) -> None:
         super().__init__()
         assert len(depths) == len(channels) == len(attn_depths)
+        self._num_down = len(channels) - 1
 
         d_blocks, u_blocks = [], []
         for i, n in enumerate(depths):
@@ -221,6 +222,12 @@ class UNet(nn.Module):
         self.upsamples = nn.ModuleList(upsamples)
 
     def forward(self, x: Tensor, cond: Tensor) -> Tensor:
+        *_, h, w = x.size()
+        n = self._num_down
+        padding_h = math.ceil(h / 2 ** n) * 2 ** n - h
+        padding_w = math.ceil(w / 2 ** n) * 2 ** n - w
+        x = F.pad(x, (0, padding_w, 0, padding_h))
+
         d_outputs = []
         for block, down in zip(self.d_blocks, self.downsamples):
             x_down = down(x)
@@ -228,11 +235,12 @@ class UNet(nn.Module):
             d_outputs.append((x_down, *block_outputs))
 
         x, _ = self.mid_blocks(x, cond)
-
+        
         u_outputs = []
         for block, up, skip in zip(self.u_blocks, self.upsamples, reversed(d_outputs)):
             x_up = up(x)
             x, block_outputs = block(x_up, cond, skip[::-1])
             u_outputs.append((x_up, *block_outputs))
 
+        x = x[..., :h, :w]
         return x, d_outputs, u_outputs

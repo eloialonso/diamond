@@ -23,7 +23,7 @@ initialization:
   load_actor_critic: True
 
 common:
-  device: cuda:0
+  devices: 0  # int, list of int, cpu, or all 
   seed: null
   resume: False # do not modify, set by scripts/resume.sh only.
 
@@ -32,7 +32,6 @@ checkpointing:
   num_to_keep: 11  # number of checkpoints to keep, use null to disable
 
 collection:
-  path_to_static_dataset: null
   train:
     num_envs: 1
     epsilon: 0.01
@@ -47,6 +46,10 @@ collection:
     num_episodes: 4
     epsilon: 0.0
     num_final_episodes: 100
+
+static_dataset:
+  path: null  # if specified, will disable train/test data collection
+  ignore_sample_weights: True
 
 training:
   should: True

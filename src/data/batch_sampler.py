@@ -11,14 +11,18 @@ class BatchSampler(torch.utils.data.Sampler):
     def __init__(
         self,
         dataset: Dataset,
+        rank: int,
+        world_size: int,
         batch_size: int,
         seq_length: int,
-        sample_weights: Optional[List] = None,
+        sample_weights: Optional[List[float]] = None,
         can_sample_beyond_end: bool = False,
     ) -> None:
         super().__init__(dataset)
         assert isinstance(dataset, Dataset)
         self.dataset = dataset
+        self.rank = rank
+        self.world_size = world_size
         self.sample_weights = sample_weights
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -46,7 +50,9 @@ class BatchSampler(torch.utils.data.Sampler):
             ]
             weights = [w / s for (w, s) in zip(weights, sizes) for _ in range(s)]
 
-        episode_ids = np.random.choice(np.arange(num_episodes), size=self.batch_size, replace=True, p=weights)
+        episodes_partition = np.arange(self.rank, num_episodes, self.world_size)
+        weights = np.array(weights[self.rank::self.world_size])
+        episode_ids = np.random.choice(episodes_partition, size=self.batch_size, replace=True, p=weights / weights.sum())
         timesteps = np.random.randint(low=0, high=self.dataset.lengths[episode_ids])
 
         # padding allowed, both before start and after end

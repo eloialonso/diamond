@@ -90,11 +90,11 @@ class WorldModelEnv:
 
     @torch.no_grad()
     def predict_next_obs(self) -> Tuple[Tensor, List[Tensor]]:
-        return self.sampler.sample_next_obs(self.obs_buffer, self.act_buffer)
+        return self.sampler.sample(self.obs_buffer, self.act_buffer)
 
     @torch.no_grad()
     def predict_rew_end(self, next_obs: Tensor) -> Tuple[Tensor, Tensor]:
-        logits_rew, logits_end, (self.hx_rew_end, self.cx_rew_end) = self.rew_end_model(
+        logits_rew, logits_end, (self.hx_rew_end, self.cx_rew_end) = self.rew_end_model.predict_rew_end(
             self.obs_buffer[:, -1:],
             self.act_buffer[:, -1:],
             next_obs,
@@ -121,7 +121,7 @@ class WorldModelEnv:
                 obs = batch.obs.to(self.device)
                 act = batch.act.to(self.device)
                 with torch.no_grad():
-                    *_, (hx, cx) = self.rew_end_model(obs[:, :-1], act[:, :-1], obs[:, 1:])  # Burn-in of rew/end model
+                    *_, (hx, cx) = self.rew_end_model.predict_rew_end(obs[:, :-1], act[:, :-1], obs[:, 1:])  # Burn-in of rew/end model
                 assert hx.size(0) == cx.size(0) == 1
                 obs_.extend(list(obs))
                 act_.extend(list(act))

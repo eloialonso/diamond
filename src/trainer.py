@@ -1,15 +1,14 @@
-from datetime import datetime
 from functools import partial
 from pathlib import Path
 import shutil
 import time
-from typing import Tuple
+from typing import List, Optional, Tuple
 
-import hydra
 from hydra.utils import instantiate
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 import torch
+import torch.distributed as dist
 from torch.utils.data import DataLoader
 from tqdm import tqdm, trange
 import wandb
@@ -19,6 +18,8 @@ from coroutines.collector import make_collector, NumToCollect
 from data import BatchSampler, collate_segments_to_batch, Dataset, DatasetTraverser
 from envs import make_atari_env, WorldModelEnv
 from utils import (
+    broadcast_if_needed,
+    build_ddp_wrapper,
     CommonTools,
     configure_opt,
     count_parameters,
@@ -36,30 +37,32 @@ from utils import (
 
 
 class Trainer(StateDictMixin):
-    def __init__(self, cfg: DictConfig) -> None:
+    def __init__(self, cfg: DictConfig, root_dir: Path) -> None:
         torch.backends.cuda.matmul.allow_tf32 = True
         OmegaConf.resolve(cfg)
         self._cfg = cfg
+        self._rank = dist.get_rank() if dist.is_initialized() else 0
+        self._world_size = dist.get_world_size() if dist.is_initialized() else 1
 
-        # Seed
-        if cfg.common.seed is None:
-            cfg.common.seed = int(datetime.now().timestamp()) % 10**5
-        set_seed(cfg.common.seed)
-
-        # Init wandb
-        try_until_no_except(
-            partial(wandb.init, config=OmegaConf.to_container(cfg, resolve=True), reinit=True, resume=True, **cfg.wandb)
-        )
-
-        # Flags
-        self._is_static_dataset = cfg.collection.path_to_static_dataset is not None
-        self._is_model_free = cfg.training.model_free
-        self._use_cuda = "cuda" in cfg.common.device
+        # Pick a random seed
+        set_seed(torch.seed() % 10 ** 9)
 
         # Device
-        self._device = torch.device(cfg.common.device)
+        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu", self._rank)
+        print(f"Starting on {self._device}")
+        self._use_cuda = self._device.type == "cuda"
         if self._use_cuda:
-            torch.cuda.set_device(self._device)  # fix compilation error on multi-gpu nodes
+            torch.cuda.set_device(self._rank)  # fix compilation error on multi-gpu nodes
+
+        # Init wandb
+        if self._rank == 0:
+            try_until_no_except(
+                partial(wandb.init, config=OmegaConf.to_container(cfg, resolve=True), reinit=True, resume=True, **cfg.wandb)
+            )
+
+        # Flags
+        self._is_static_dataset = cfg.static_dataset.path is not None
+        self._is_model_free = cfg.training.model_free
 
         # Checkpointing
         self._path_ckpt_dir = Path("checkpoints")
@@ -75,42 +78,48 @@ class Trainer(StateDictMixin):
         )
 
         # First time, init files hierarchy
-        if not cfg.common.resume:
+        if not cfg.common.resume and self._rank == 0:
             self._path_ckpt_dir.mkdir(exist_ok=False, parents=False)
             path_config = Path("config") / "trainer.yaml"
             path_config.parent.mkdir(exist_ok=False, parents=False)
             shutil.move(".hydra/config.yaml", path_config)
             wandb.save(str(path_config))
-            shutil.copytree(src=(Path(hydra.utils.get_original_cwd()) / "src"), dst="./src")
-            shutil.copytree(src=(Path(hydra.utils.get_original_cwd()) / "scripts"), dst="./scripts")
+            shutil.copytree(src=root_dir / "src", dst="./src")
+            shutil.copytree(src=root_dir / "scripts", dst="./scripts")
 
         # Datasets
         num_workers = cfg.training.num_workers_data_loaders
         use_manager = cfg.training.cache_in_ram and (num_workers > 0)
-        p = Path(cfg.collection.path_to_static_dataset) if self._is_static_dataset else Path("dataset")
+        p = Path(cfg.static_dataset.path) if self._is_static_dataset else Path("dataset")
         self.train_dataset = Dataset(p / "train", "train_dataset", cfg.training.cache_in_ram, use_manager)
         self.test_dataset = Dataset(p / "test", "test_dataset", cache_in_ram=True)
         self.train_dataset.load_from_default_path()
         self.test_dataset.load_from_default_path()
 
         # Envs
-        train_env = make_atari_env(num_envs=cfg.collection.train.num_envs, device=self._device, **cfg.env.train)
-        test_env = make_atari_env(num_envs=cfg.collection.test.num_envs, device=self._device, **cfg.env.test)
+        if self._rank == 0:
+            train_env = make_atari_env(num_envs=cfg.collection.train.num_envs, device=self._device, **cfg.env.train)
+            test_env = make_atari_env(num_envs=cfg.collection.test.num_envs, device=self._device, **cfg.env.test)
+            num_actions = int(test_env.num_actions)
+        else:
+            num_actions = None
+        num_actions, = broadcast_if_needed(num_actions)
 
         # Create models
-        num_actions = int(test_env.num_actions)
         self.agent = Agent(instantiate(cfg.agent, num_actions=num_actions)).to(self._device)
+        self._agent = build_ddp_wrapper(**self.agent._modules) if dist.is_initialized() else self.agent
 
         if cfg.initialization.path_to_ckpt is not None:
             self.agent.load(**cfg.initialization)
 
         # Collectors
-        self._train_collector = make_collector(
-            train_env, self.agent.actor_critic, self.train_dataset, cfg.collection.train.epsilon
-        )
-        self._test_collector = make_collector(
-            test_env, self.agent.actor_critic, self.test_dataset, cfg.collection.test.epsilon, reset_every_collect=True
-        )
+        if not self._is_static_dataset and self._rank == 0:
+            self._train_collector = make_collector(
+                train_env, self.agent.actor_critic, self.train_dataset, cfg.collection.train.epsilon
+            )
+            self._test_collector = make_collector(
+                test_env, self.agent.actor_critic, self.test_dataset, cfg.collection.test.epsilon, reset_every_collect=True
+            )
 
         ######################################################
 
@@ -138,14 +147,19 @@ class Trainer(StateDictMixin):
             pin_memory_device=str(self._device) if self._use_cuda else "",
         )
 
+        make_batch_sampler = partial(BatchSampler, self.train_dataset, self._rank, self._world_size)
+
+        def get_sample_weights(sample_weights: List[float]) -> Optional[List[float]]:
+            return None if (self._is_static_dataset and cfg.static_dataset.ignore_sample_weights) else sample_weights
+
         c = cfg.denoiser.training
         seq_length = cfg.agent.denoiser.inner_model.num_steps_conditioning + 1 + c.num_autoregressive_steps
-        bs = BatchSampler(self.train_dataset, c.batch_size, seq_length, c.sample_weights)
+        bs = make_batch_sampler(c.batch_size, seq_length, get_sample_weights(c.sample_weights))
         dl_denoiser_train = make_data_loader(batch_sampler=bs)
         dl_denoiser_test = DatasetTraverser(self.test_dataset, c.batch_size, seq_length)
 
         c = cfg.rew_end_model.training
-        bs = BatchSampler(self.train_dataset, c.batch_size, c.seq_length, c.sample_weights, can_sample_beyond_end=True)
+        bs = make_batch_sampler(c.batch_size, c.seq_length, get_sample_weights(c.sample_weights), can_sample_beyond_end=True)
         dl_rew_end_model_train = make_data_loader(batch_sampler=bs)
         dl_rew_end_model_test = DatasetTraverser(self.test_dataset, c.batch_size, c.seq_length)
 
@@ -160,7 +174,7 @@ class Trainer(StateDictMixin):
         else:
             c = cfg.actor_critic.training
             sl = cfg.agent.denoiser.inner_model.num_steps_conditioning
-            bs = BatchSampler(self.train_dataset, c.batch_size, sl, c.sample_weights)
+            bs = make_batch_sampler(c.batch_size, sl, get_sample_weights(c.sample_weights))
             dl_actor_critic = make_data_loader(batch_sampler=bs)
             wm_env_cfg = instantiate(cfg.world_model_env)
             rl_env = WorldModelEnv(self.agent.denoiser, self.agent.rew_end_model, dl_actor_critic, wm_env_cfg)
@@ -186,10 +200,11 @@ class Trainer(StateDictMixin):
         else:
             self.save_checkpoint()
 
-        for name in self._model_names:
-            print(f"{count_parameters(getattr(self.agent, name))} parameters in {name}")
-        print(self.train_dataset)
-        print(self.test_dataset)
+        if self._rank == 0:
+            for name in self._model_names:
+                print(f"{count_parameters(getattr(self.agent, name))} parameters in {name}")
+            print(self.train_dataset)
+            print(self.test_dataset)
 
     def run(self) -> None:
         to_log = []
@@ -198,31 +213,35 @@ class Trainer(StateDictMixin):
             if self._is_model_free or self._is_static_dataset:
                 self.num_epochs_collect = 0
             else:
-                self.num_epochs_collect, to_log_ = self.collect_initial_dataset()
-                to_log += to_log_
+                if self._rank == 0:
+                    self.num_epochs_collect, to_log_ = self.collect_initial_dataset()
+                    to_log += to_log_
+                self.num_epochs_collect, sd_train_dataset = broadcast_if_needed(self.num_epochs_collect, self.train_dataset.state_dict())
+                self.train_dataset.load_state_dict(sd_train_dataset)
 
         num_epochs = self.num_epochs_collect + self._cfg.training.num_final_epochs
 
         while self.epoch < num_epochs:
             self.epoch += 1
-
-            print(f"\nEpoch {self.epoch} / {num_epochs}\n")
             start_time = time.time()
 
+            if self._rank == 0:
+                print(f"\nEpoch {self.epoch} / {num_epochs}\n")
+
             # Training
-            should_collect_train = (
-                not self._is_model_free and not self._is_static_dataset and self.epoch <= self.num_epochs_collect
-            )
+            should_collect_train = (self._rank == 0 and not self._is_model_free and not self._is_static_dataset and self.epoch <= self.num_epochs_collect)
 
             if should_collect_train:
                 c = self._cfg.collection.train
                 to_log += self._train_collector.send(NumToCollect(steps=c.steps_per_epoch))
-
+            sd_train_dataset, = broadcast_if_needed(self.train_dataset.state_dict())  # update dataset for ranks > 0
+            self.train_dataset.load_state_dict(sd_train_dataset)
+            
             if self._cfg.training.should:
                 to_log += self.train_agent()
 
             # Evaluation
-            should_test = self._cfg.evaluation.should and (self.epoch % self._cfg.evaluation.every == 0)
+            should_test = self._rank == 0 and self._cfg.evaluation.should and (self.epoch % self._cfg.evaluation.every == 0)
             should_collect_test = should_test and not self._is_static_dataset
 
             if should_collect_test:
@@ -233,14 +252,18 @@ class Trainer(StateDictMixin):
 
             # Logging
             to_log.append({"duration": (time.time() - start_time) / 3600})
-            wandb_log(to_log, self.epoch)
+            if self._rank == 0:
+                wandb_log(to_log, self.epoch)
             to_log = []
 
             # Checkpointing
             self.save_checkpoint()
+            
+            if dist.is_initialized():
+                dist.barrier()
 
         # Last collect
-        if not self._is_static_dataset:
+        if self._rank == 0 and not self._is_static_dataset:
             wandb_log(self.collect_test(final=True), self.epoch)
 
     def collect_initial_dataset(self) -> Tuple[int, Logs]:
@@ -325,7 +348,7 @@ class Trainer(StateDictMixin):
 
     def train_component(self, name: str, steps: int) -> Logs:
         cfg = getattr(self._cfg, name).training
-        model = getattr(self.agent, name)
+        model = getattr(self._agent, name)
         opt = self.opt.get(name)
         lr_sched = self.lr_sched.get(name)
         data_loader = self._data_loader_train.get(name)
@@ -337,9 +360,9 @@ class Trainer(StateDictMixin):
 
         num_steps = cfg.grad_acc_steps * steps
 
-        for i in trange(num_steps, desc=f"Training {name}"):
+        for i in trange(num_steps, desc=f"Training {name}", disable=self._rank > 0):
             batch = next(data_iterator).to(self._device) if data_iterator is not None else None
-            loss, metrics = model.compute_loss(batch) if batch is not None else model.compute_loss()
+            loss, metrics = model(batch) if batch is not None else model()
             loss.backward()
 
             num_batch = self.num_batch_train.get(name)
@@ -372,7 +395,7 @@ class Trainer(StateDictMixin):
         to_log = []
         for batch in tqdm(data_loader, desc=f"Evaluating {name}"):
             batch = batch.to(self._device)
-            _, metrics = model.compute_loss(batch)
+            _, metrics = model(batch)
             num_batch = self.num_batch_test.get(name)
             metrics[f"num_batch_test_{name}"] = num_batch
             self.num_batch_test.set(name, num_batch + 1)
@@ -386,8 +409,9 @@ class Trainer(StateDictMixin):
         self.load_state_dict(torch.load(self._path_state_ckpt, map_location=self._device))
 
     def save_checkpoint(self) -> None:
-        save_with_backup(self.state_dict(), self._path_state_ckpt)
-        self.train_dataset.save_to_default_path()
-        self.test_dataset.save_to_default_path()
-        self._keep_agent_copies(self.agent.state_dict(), self.epoch)
-        self._save_info_for_import_script(self.epoch)
+        if self._rank == 0:
+            save_with_backup(self.state_dict(), self._path_state_ckpt)
+            self.train_dataset.save_to_default_path()
+            self.test_dataset.save_to_default_path()
+            self._keep_agent_copies(self.agent.state_dict(), self.epoch)
+            self._save_info_for_import_script(self.epoch)

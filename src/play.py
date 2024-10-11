@@ -103,7 +103,7 @@ def prepare_play_mode(cfg: DictConfig, args: argparse.Namespace) -> Tuple[PlayEn
         dataset.save_to_default_path()
 
     # World model environment
-    bs = BatchSampler(dataset, 1, cfg.agent.denoiser.inner_model.num_steps_conditioning, None, False)
+    bs = BatchSampler(dataset, 0, 1, 1, cfg.agent.denoiser.inner_model.num_steps_conditioning, None, False)
     dl = DataLoader(dataset, batch_sampler=bs, collate_fn=collate_segments_to_batch)
     wm_env_cfg = instantiate(cfg.world_model_env, num_batches_to_preload=1)
     wm_env = WorldModelEnv(agent.denoiser, agent.rew_end_model, dl, wm_env_cfg, return_denoising_trajectory=True)

@@ -28,7 +28,7 @@ def make_env_loop(
         n = 0
 
         while n < num_steps:
-            logits_act, val, (hx, cx) = model(obs, (hx, cx))
+            logits_act, val, (hx, cx) = model.predict_act_value(obs, (hx, cx))
             act = Categorical(logits=logits_act).sample()
 
             if random.random() < epsilon:
@@ -46,14 +46,14 @@ def make_env_loop(
 
             if dead.any():
                 with torch.no_grad():
-                    _, val_final_obs, _ = model(info["final_observation"], (hx[dead], cx[dead]))
+                    _, val_final_obs, _ = model.predict_act_value(info["final_observation"], (hx[dead], cx[dead]))
                 reset_gate = 1 - dead.float().unsqueeze(1)
                 hx = hx * reset_gate
                 cx = cx * reset_gate
                 if "burnin_obs" in info:
                     burnin_obs = info["burnin_obs"]
                     for i in range(burnin_obs.size(1)):
-                        _, _, (hx[dead], cx[dead]) = model(burnin_obs[:, i], (hx[dead], cx[dead]))
+                        _, _, (hx[dead], cx[dead]) = model.predict_act_value(burnin_obs[:, i], (hx[dead], cx[dead]))
 
             all_.append([obs, act, rew, end, trunc, logits_act, val, None])
             infos.append(info)
@@ -62,7 +62,7 @@ def make_env_loop(
             n += 1
 
         with torch.no_grad():
-            _, val_bootstrap, _ = model(next_obs, (hx, cx))  # do not update hx/cx
+            _, val_bootstrap, _ = model.predict_act_value(next_obs, (hx, cx))  # do not update hx/cx
 
         if dead.any():
             val_bootstrap[dead] = val_final_obs

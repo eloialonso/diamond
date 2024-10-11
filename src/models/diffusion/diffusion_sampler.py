@@ -21,16 +21,16 @@ class DiffusionSamplerConfig:
 
 
 class DiffusionSampler:
-    def __init__(self, denoiser: Denoiser, cfg: DiffusionSamplerConfig):
+    def __init__(self, denoiser: Denoiser, cfg: DiffusionSamplerConfig) -> None:
         self.denoiser = denoiser
         self.cfg = cfg
         self.sigmas = build_sigmas(cfg.num_steps_denoising, cfg.sigma_min, cfg.sigma_max, cfg.rho, denoiser.device)
 
     @torch.no_grad()
-    def sample_next_obs(self, obs: Tensor, act: Tensor) -> Tuple[Tensor, List[Tensor]]:
-        device = obs.device
-        b, t, c, h, w = obs.size()
-        obs = obs.reshape(b, t * c, h, w)
+    def sample(self, prev_obs: Tensor, prev_act: Tensor) -> Tuple[Tensor, List[Tensor]]:
+        device = prev_obs.device
+        b, t, c, h, w = prev_obs.size()
+        prev_obs = prev_obs.reshape(b, t * c, h, w)
         s_in = torch.ones(b, device=device)
         gamma_ = min(self.cfg.s_churn / (len(self.sigmas) - 1), 2**0.5 - 1)
         x = torch.randn(b, c, h, w, device=device)
@@ -41,7 +41,7 @@ class DiffusionSampler:
             if gamma > 0:
                 eps = torch.randn_like(x) * self.cfg.s_noise
                 x = x + eps * (sigma_hat**2 - sigma**2) ** 0.5
-            denoised = self.denoiser.denoise(x, sigma, obs, act)
+            denoised = self.denoiser.denoise(x, sigma, prev_obs, prev_act)
             d = (x - denoised) / sigma_hat
             dt = next_sigma - sigma_hat
             if self.cfg.order == 1 or next_sigma == 0:
@@ -50,7 +50,7 @@ class DiffusionSampler:
             else:
                 # Heun's method
                 x_2 = x + d * dt
-                denoised_2 = self.denoiser.denoise(x_2, next_sigma * s_in, obs, act)
+                denoised_2 = self.denoiser.denoise(x_2, next_sigma * s_in, prev_obs, prev_act)
                 d_2 = (x_2 - denoised_2) / next_sigma
                 d_prime = (d + d_2) / 2
                 x = x + d_prime * dt
@@ -64,3 +64,4 @@ def build_sigmas(num_steps: int, sigma_min: float, sigma_max: float, rho: int, d
     l = torch.linspace(0, 1, num_steps, device=device)
     sigmas = (max_inv_rho + l * (min_inv_rho - max_inv_rho)) ** rho
     return torch.cat((sigmas, sigmas.new_zeros(1)))
+

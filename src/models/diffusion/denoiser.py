@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Tuple
+from typing import Optional
 
 import torch
 from torch import Tensor
@@ -8,11 +8,19 @@ import torch.nn.functional as F
 
 from data import Batch
 from .inner_model import InnerModel, InnerModelConfig
-from utils import ComputeLossOutput
+from utils import LossAndLogs
 
 
 def add_dims(input: Tensor, n: int) -> Tensor:
     return input.reshape(input.shape + (1,) * (n - input.ndim))
+
+
+@dataclass
+class Conditioners:
+    c_in: Tensor
+    c_out: Tensor
+    c_skip: Tensor
+    c_noise: Tensor
 
 
 @dataclass
@@ -49,31 +57,40 @@ class Denoiser(nn.Module):
             return s.exp().clip(cfg.sigma_min, cfg.sigma_max)
 
         self.sample_sigma_training = sample_sigma
+    
+    def apply_noise(self, x: Tensor, sigma: Tensor, sigma_offset_noise: float) -> Tensor:
+        b, c, _, _ = x.shape 
+        offset_noise = sigma_offset_noise * torch.randn(b, c, 1, 1, device=self.device)
+        return x + offset_noise + torch.randn_like(x) * add_dims(sigma, x.ndim)
 
-    def forward(self, noisy_next_obs: Tensor, sigma: Tensor, obs: Tensor, act: Tensor) -> Tuple[Tensor, Tensor]:
-        c_in, c_out, c_skip, c_noise = self._compute_conditioners(sigma)
-        rescaled_obs = obs / self.cfg.sigma_data
-        rescaled_noise = noisy_next_obs * c_in
-        model_output = self.inner_model(rescaled_noise, c_noise, rescaled_obs, act)
-        denoised = model_output * c_out + noisy_next_obs * c_skip
-        return model_output, denoised
-
-    @torch.no_grad()
-    def denoise(self, noisy_next_obs: Tensor, sigma: Tensor, obs: Tensor, act: Tensor) -> Tensor:
-        _, d = self(noisy_next_obs, sigma, obs, act)
-        # Quantize to {0, ..., 255}, then back to [-1, 1]
-        d = d.clamp(-1, 1).add(1).div(2).mul(255).byte().div(255).mul(2).sub(1)
-        return d
-
-    def _compute_conditioners(self, sigma: Tensor) -> Tuple[Tensor, Tensor, Tensor, Tensor]:
+    def compute_conditioners(self, sigma: Tensor) -> Conditioners:
         sigma = (sigma**2 + self.cfg.sigma_offset_noise**2).sqrt()
         c_in = 1 / (sigma**2 + self.cfg.sigma_data**2).sqrt()
         c_skip = self.cfg.sigma_data**2 / (sigma**2 + self.cfg.sigma_data**2)
         c_out = sigma * c_skip.sqrt()
         c_noise = sigma.log() / 4
-        return *(add_dims(c, 4) for c in (c_in, c_out, c_skip)), add_dims(c_noise, 1)
+        return Conditioners(*(add_dims(c, n) for c, n in zip((c_in, c_out, c_skip, c_noise), (4, 4, 4, 1, 1))))
 
-    def compute_loss(self, batch: Batch) -> ComputeLossOutput:
+    def compute_model_output(self, noisy_next_obs: Tensor, obs: Tensor, act: Tensor, cs: Conditioners) -> Tensor:
+        rescaled_obs = obs / self.cfg.sigma_data
+        rescaled_noise = noisy_next_obs * cs.c_in
+        return self.inner_model(rescaled_noise, cs.c_noise, rescaled_obs, act)
+    
+    @torch.no_grad()
+    def wrap_model_output(self, noisy_next_obs: Tensor, model_output: Tensor, cs: Conditioners) -> Tensor:
+        d = cs.c_skip * noisy_next_obs + cs.c_out * model_output
+        # Quantize to {0, ..., 255}, then back to [-1, 1]
+        d = d.clamp(-1, 1).add(1).div(2).mul(255).byte().div(255).mul(2).sub(1)
+        return d
+    
+    @torch.no_grad()
+    def denoise(self, noisy_next_obs: Tensor, sigma: Tensor, obs: Tensor, act: Tensor) -> Tensor:
+        cs = self.compute_conditioners(sigma)
+        model_output = self.compute_model_output(noisy_next_obs, obs, act, cs)
+        denoised = self.wrap_model_output(noisy_next_obs, model_output, cs)
+        return denoised
+
+    def forward(self, batch: Batch) -> LossAndLogs:
         n = self.cfg.inner_model.num_steps_conditioning
         seq_length = batch.obs.size(1) - n
 
@@ -90,17 +107,16 @@ class Denoiser(nn.Module):
             obs = obs.reshape(b, t * c, h, w)
 
             sigma = self.sample_sigma_training(b, self.device)
-            _, c_out, c_skip, _ = self._compute_conditioners(sigma)
+            noisy_next_obs = self.apply_noise(next_obs, sigma, self.cfg.sigma_offset_noise)
 
-            offset_noise = self.cfg.sigma_offset_noise * torch.randn(b, c, 1, 1, device=next_obs.device)
-            noisy_next_obs = next_obs + offset_noise + torch.randn_like(next_obs) * add_dims(sigma, next_obs.ndim)
+            cs = self.compute_conditioners(sigma)
+            model_output = self.compute_model_output(noisy_next_obs, obs, act, cs)
 
-            model_output, denoised = self(noisy_next_obs, sigma, obs, act)
-
-            target = (next_obs - c_skip * noisy_next_obs) / c_out
+            target = (next_obs - cs.c_skip * noisy_next_obs) / cs.c_out
             loss += F.mse_loss(model_output[mask], target[mask])
 
-            all_obs[:, n + i] = denoised.detach().clamp(-1, 1)
+            denoised = self.wrap_model_output(noisy_next_obs, model_output, cs)
+            all_obs[:, n + i] = denoised
 
         loss /= seq_length
         return loss, {"loss_denoising": loss.detach()}

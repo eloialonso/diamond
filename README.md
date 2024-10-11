@@ -31,6 +31,16 @@ And press `m` to take control (the policy is playing by default)!
 
 **Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
 
+## CSGO
+
+
+**Edit**: Check out the [csgo branch](https://github.com/eloialonso/diamond/tree/csgo) to try our DIAMOND's world model trained on *Counter-Strike: Global Offensive*!
+
+```bash
+git checkout csgo
+python src/play.py
+```
+
 <a name="quick_links"></a>
 ## Quick Links
 

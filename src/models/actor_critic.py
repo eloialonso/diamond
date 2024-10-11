@@ -12,7 +12,7 @@ import torch.nn.functional as F
 from .blocks import Conv3x3, SmallResBlock
 from coroutines.env_loop import make_env_loop
 from envs import TorchEnv, WorldModelEnv
-from utils import ComputeLossOutput, init_lstm
+from utils import init_lstm, LossAndLogs
 
 
 ActorCriticOutput = namedtuple("ActorCriticOutput", "logits_act val hx_cx")
@@ -65,14 +65,14 @@ class ActorCritic(nn.Module):
         self.env_loop = make_env_loop(rl_env, self)
         self.loss_cfg = loss_cfg
 
-    def forward(self, obs: Tensor, hx_cx: Tuple[Tensor, Tensor]) -> ActorCriticOutput:
+    def predict_act_value(self, obs: Tensor, hx_cx: Tuple[Tensor, Tensor]) -> ActorCriticOutput:
         assert obs.ndim == 4
         x = self.encoder(obs)
         x = x.flatten(start_dim=1)
         hx, cx = self.lstm(x, hx_cx)
         return ActorCriticOutput(self.actor_linear(hx), self.critic_linear(hx).squeeze(dim=1), (hx, cx))
 
-    def compute_loss(self) -> ComputeLossOutput:
+    def forward(self) -> LossAndLogs:
         c = self.loss_cfg
         _, act, rew, end, trunc, logits_act, val, val_bootstrap, _ = self.env_loop.send(c.backup_every)
 

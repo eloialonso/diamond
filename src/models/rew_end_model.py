@@ -9,7 +9,7 @@ from torcheval.metrics.functional import multiclass_confusion_matrix
 
 from .blocks import Conv3x3, Downsample, ResBlocks
 from data import Batch
-from utils import ComputeLossOutput, init_lstm
+from utils import init_lstm, LossAndLogs
 
 
 @dataclass
@@ -39,7 +39,7 @@ class RewEndModel(nn.Module):
         )
         init_lstm(self.lstm)
 
-    def forward(
+    def predict_rew_end(
         self,
         obs: Tensor,
         act: Tensor,
@@ -54,7 +54,7 @@ class RewEndModel(nn.Module):
         logits = self.head(x)
         return logits[:, :, :-2], logits[:, :, -2:], hx_cx
 
-    def compute_loss(self, batch: Batch) -> ComputeLossOutput:
+    def forward(self, batch: Batch) -> LossAndLogs:
         obs = batch.obs[:, :-1]
         act = batch.act[:, :-1]
         next_obs = batch.obs[:, 1:]
@@ -68,7 +68,7 @@ class RewEndModel(nn.Module):
             final_obs = torch.stack([i["final_observation"] for i, d in zip(batch.info, dead) if d]).to(obs.device)
             next_obs[dead, end[dead].argmax(dim=1)] = final_obs
 
-        logits_rew, logits_end, _ = self(obs, act, next_obs)
+        logits_rew, logits_end, _ = self.predict_rew_end(obs, act, next_obs)
         logits_rew = logits_rew[mask]
         logits_end = logits_end[mask]
         target_rew = rew[mask].sign().long().add(1)  # clipped to {-1, 0, 1}

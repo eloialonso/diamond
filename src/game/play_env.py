@@ -114,7 +114,7 @@ class PlayEnv:
         if self.is_human_player:
             act = torch.tensor([act], device=self.agent.device)
         else:
-            logits_act, value, self.hx_cx = self.agent.actor_critic(self.obs, self.hx_cx)
+            logits_act, value, self.hx_cx = self.agent.actor_critic.predict_act_value(self.obs, self.hx_cx)
             dst = torch.distributions.categorical.Categorical(logits=logits_act)
             act = dst.sample()
             entropy = dst.entropy() / math.log(2)
