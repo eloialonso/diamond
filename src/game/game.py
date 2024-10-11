@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Tuple, Union
 
 import numpy as np
@@ -23,6 +24,9 @@ class Game:
         self.height, self.width = size
         self.fps = fps
         self.verbose = verbose
+        self.keymap = OrderedDict()
+        for keys, act in sorted(keymap.items(), key=lambda keys_act: -len(keys_act[0])):
+            self.keymap[keys] = act
 
         print("\nControls (general):\n")
         print("⏎ : reset env")
@@ -107,13 +111,10 @@ class Game:
                 if event.key == pygame.K_LEFT:
                     do_reset = self.env.prev_axis_2()
 
-                if event.key in self.keymap.keys():
-                    action = self.keymap[event.key]
-
             if action == 0:
                 pressed = pygame.key.get_pressed()
-                for key, action in self.keymap.items():
-                    if pressed[key]:
+                for keys, action in self.keymap.items():
+                    if all([pressed[key] for key in keys]):
                         break
                 else:
                     action = 0

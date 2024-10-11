@@ -5,7 +5,7 @@ import pygame
 
 
 ActionNames = List[str]
-Keymap = Dict[int, int]
+Keymap = Dict[Tuple[int], int]
 
 
 def get_keymap_and_action_names(name: str) -> Tuple[Keymap, ActionNames]:
@@ -50,23 +50,27 @@ ATARI_ACTION_NAMES = [
 ]
 
 ATARI_KEYMAP = {
-    pygame.K_SPACE: 1,
-    pygame.K_w: 2,
-    pygame.K_d: 3,
-    pygame.K_a: 4,
-    pygame.K_s: 5,
-    pygame.K_t: 6,
-    pygame.K_r: 7,
-    pygame.K_g: 8,
-    pygame.K_f: 9,
-    pygame.K_UP: 10,
-    pygame.K_RIGHT: 11,
-    pygame.K_LEFT: 12,
-    pygame.K_DOWN: 13,
-    pygame.K_i: 14,
-    pygame.K_u: 15,
-    pygame.K_k: 16,
-    pygame.K_j: 17,
+    (pygame.K_SPACE,): 1,
+    (pygame.K_w,): 2,
+    (pygame.K_d,): 3,
+    (pygame.K_a,): 4,
+    (pygame.K_s,): 5,
+
+    (pygame.K_w, pygame.K_d): 6,
+    (pygame.K_w, pygame.K_a): 7,
+    (pygame.K_s, pygame.K_d): 8,
+    (pygame.K_s, pygame.K_a): 9,
+
+    (pygame.K_w, pygame.K_SPACE): 10,
+    (pygame.K_d, pygame.K_SPACE): 11,
+    (pygame.K_a, pygame.K_SPACE): 12,
+    (pygame.K_s, pygame.K_SPACE): 13,
+
+    (pygame.K_w, pygame.K_d, pygame.K_SPACE): 14,
+    (pygame.K_w, pygame.K_a, pygame.K_SPACE): 15,
+    (pygame.K_s, pygame.K_d, pygame.K_SPACE): 16,
+    (pygame.K_s, pygame.K_a, pygame.K_SPACE): 17,
+
 }
 
 DATASET_MODE_ACTION_NAMES = [
@@ -78,10 +82,10 @@ DATASET_MODE_ACTION_NAMES = [
 ]
 
 DATASET_MODE_KEYMAP = {
-    pygame.K_LEFT: 1,
-    pygame.K_RIGHT: 2,
-    pygame.K_PAGEDOWN: 3,
-    pygame.K_PAGEUP: 4,
+    (pygame.K_LEFT,): 1,
+    (pygame.K_RIGHT,): 2,
+    (pygame.K_PAGEDOWN,): 3,
+    (pygame.K_PAGEUP,): 4,
 }
 
 EMPTY_ACTION_NAMES = [

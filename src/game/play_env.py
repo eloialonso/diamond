@@ -48,9 +48,10 @@ class PlayEnv:
         print(f"→ : next environment ({' → '.join([env_name for (env_name, _) in self.envs])})")
         print(f"← : prev environment ({' ← '.join([env_name for (env_name, _) in self.envs])})")
         print("\nEnvironment actions:\n")
-        for key, idx in self.keymap.items():
-            key_name = pygame.key.name(key)
-            print(f"{'⎵' if key_name == 'space' else key_name} : {self.action_names[idx]}")
+        for keys, idx in self.keymap.items():
+            key_names = [pygame.key.name(key) for key in keys]
+            key_names = ["⎵" if key_name == "space" else key_name for key_name in key_names]
+            print(f"{' + '.join(key_names)} : {self.action_names[idx]}")
 
     def next_mode(self) -> bool:
         self.switch_controller()
