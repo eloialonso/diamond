@@ -3,7 +3,7 @@ from typing import Generator, List, Optional
 import numpy as np
 import torch
 
-from .dataset import Dataset
+from .dataset import CSGOHdf5Dataset, Dataset
 from .segment import SegmentId
 
 
@@ -19,7 +19,7 @@ class BatchSampler(torch.utils.data.Sampler):
         can_sample_beyond_end: bool = False,
     ) -> None:
         super().__init__(dataset)
-        assert isinstance(dataset, Dataset)
+        assert isinstance(dataset, (Dataset, CSGOHdf5Dataset))
         self.dataset = dataset
         self.rank = rank
         self.world_size = world_size
@@ -52,7 +52,9 @@ class BatchSampler(torch.utils.data.Sampler):
 
         episodes_partition = np.arange(self.rank, num_episodes, self.world_size)
         weights = np.array(weights[self.rank::self.world_size])
-        episode_ids = np.random.choice(episodes_partition, size=self.batch_size, replace=True, p=weights / weights.sum())
+        max_eps = self.batch_size
+        episode_ids = np.random.choice(episodes_partition, size=max_eps, replace=True, p=weights / weights.sum())
+        episode_ids = episode_ids.repeat(self.batch_size // max_eps)
         timesteps = np.random.randint(low=0, high=self.dataset.lengths[episode_ids])
 
         # padding allowed, both before start and after end

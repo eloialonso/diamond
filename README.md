@@ -1,15 +1,8 @@
 # Diffusion for World Modeling: Visual Details Matter in Atari (NeurIPS 2024 Spotlight)
 
-[**TL;DR**] 💎 DIAMOND (DIffusion As a Model Of eNvironment Dreams) is a reinforcement learning agent trained entirely in a diffusion world model.
+This branch contains the code to play (and train) our world model of *Counter-Strike: Global Offensive* (CS:GO).
 
 🌍 [Project Page](https://diamond-wm.github.io) • 🤓 [Paper](https://arxiv.org/pdf/2405.12399) • 𝕏 [Atari thread](https://x.com/EloiAlonso1/status/1793916382779982120) • 𝕏 [CSGO thread](https://x.com/EloiAlonso1/status/1844803606064611771) • 💬 [Discord](https://discord.gg/74vha5RWPg)
-
-<div align='center'>
-  RL agent playing in autoregressive imagination of Atari world models
-  <br>
-  <img alt="DIAMOND agent in WM" src="https://github.com/user-attachments/assets/eb6b72eb-73df-4178-8a3d-cdad80ff9152">
-
-</div>
 
 <div align='center'>
   Human player in CSGO world model (full quality video <a href="https://diamond-wm.github.io/static/videos/grid.mp4">here</a>)
@@ -17,224 +10,46 @@
   <img alt="DIAMOND agent in WM" src="https://github.com/user-attachments/assets/dcbdd523-ca22-46a9-bb7d-bcc52080fe00">
 </div>
 
-Quick install to try our [pretrained world models](#try) using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/):
-
->```bash
->git clone https://github.com/eloialonso/diamond.git
->cd diamond
->conda create -n diamond python=3.10
->conda activate diamond
->pip install -r requirements.txt
->```
-
-For Atari (world model + RL agent)
-
->```bash
->python src/play.py --pretrained
->```
-
-For CSGO (world model only)
-
->```bash
->git checkout csgo
->python src/play.py
->```
-
-And press `m` to take control (the policy is playing by default)!
-
-**Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
-
-## CSGO
-
-
-**Edit**: Check out the [csgo branch](https://github.com/eloialonso/diamond/tree/csgo) to try our DIAMOND's world model trained on *Counter-Strike: Global Offensive*!
-
+## Installation
 ```bash
+git clone https://github.com/eloialonso/diamond.git
+cd diamond
 git checkout csgo
-python src/play.py
-```
-> Note on Apple Silicon you must enable CPU fallback for MPS backend with
-> PYTORCH_ENABLE_MPS_FALLBACK=1 python src/play.py
-
-
-<a name="quick_links"></a>
-## Quick Links
-
-- [Try our playable diffusion world models](#try)
-- [Launch a training run](#launch)
-- [Configuration](#configuration)
-- [Visualization](#visualization)
-  - [Play mode (default)](#play_mode)
-  - [Dataset mode (add `-d`)](#dataset_mode)
-  - [Other options, common to play/dataset modes](#other_options)
-- [Run folder structure](#structure)
-- [Results](#results)
-- [Citation](#citation)
-- [Credits](#credits)
-
-<a name="try"></a>
-## [⬆️](#quick_links) Try our playable diffusion world models
-
-```bash
-python src/play.py --pretrained
-```
-
-Then select a game, and world model and policy pretrained on Atari 100k will be downloaded from our [repository on Hugging Face Hub 🤗](https://huggingface.co/eloialonso/diamond) and cached on your machine.
-
-Some things you might want to try:
-- Press `m` to change the policy between the agent and human (the policy is playing by default).
-- Press `↑/↓` to change the imagination horizon (default is 50 for playing).
-
-To adjust the sampling parameters (number of denoising steps, stochasticity, order, etc) of the trained diffusion world model, for instance to trade off sampling speed and quality, edit the section `world_model_env.diffusion_sampler` in the file `config/trainer.yaml`.
-
-See [Visualization](#visualization) for more details about the available commands and options.
-
-<a name="launch"></a>
-## [⬆️](#quick_links) Launch a training run
-
-To train with the hyperparameters used in the paper on cuda:0, launch:
-```bash
-python src/main.py env.train.id=BreakoutNoFrameskip-v4 common.devices=0
-```
-
-This creates a new folder for your run, located in `outputs/YYYY-MM-DD/hh-mm-ss/`.
-
-To resume a run that crashed, navigate to the fun folder and launch:
-
-```bash
-./scripts/resume.sh
-```
-
-<a name="configuration"></a>
-## [⬆️](#quick_links) Configuration
-
-We use [Hydra](https://github.com/facebookresearch/hydra) for configuration management.
-
-All configuration files are located in the `config` folder:
-
-- `config/trainer.yaml`: main configuration file.
-- `config/agent/default.yaml`: architecture hyperparameters.
-- `config/env/atari.yaml`: environment hyperparameters.
-
-You can turn on logging to [weights & biases](https://wandb.ai) in the `wandb` section of `config/trainer.yaml`.
-
-Set `training.model_free=true` in the file `config/trainer.yaml` to "unplug" the world model and perform standard model-free reinforcement learning.
-
-<a name="visualization"></a>
-## [⬆️](#quick_links) Visualization
-
-<a name="play_mode"></a>
-### [⬆️](#quick_links) Play mode (default)
-
-To visualize your last checkpoint, launch **from the run folder**:
-
-```bash
+conda create -n diamond python=3.10
+conda activate diamond
+pip install -r requirements.txt
 python src/play.py
 ```
 
-By default, you visualize the policy playing in the world model. To play yourself, or switch to the real environment, use the controls described below.
+> Note on Apple Silicon you must enable CPU fallback for [MPS backend](https://pytorch.org/docs/stable/notes/mps.html) with
+> `PYTORCH_ENABLE_MPS_FALLBACK=1 python src/play.py`
 
-```txt
-Controls (play mode)
+The final command will automatically download our trained CSGO diffusion world model from the [HuggingFace Hub 🤗](https://huggingface.co/eloialonso/diamond/tree/main) along with spawn points and human player actions. Note that the model weights require 1.5GB of disk space.
 
-(Game-specific commands will be printed on start up)
+When the download is complete, control actions will be printed in the terminal. Press Enter to start playing.
 
-⏎   : reset environment
-
-m   : switch controller (policy/human)
-↑/↓ : imagination horizon (+1/-1)
-←/→ : next environment [world model ←→ real env (test) ←→ real env (train)]
-
-.   : pause/unpause
-e   : step-by-step (when paused)
-```
-
-Add `-r` to toggle "recording mode" (works only in play mode). Every completed episode will be saved in `dataset/rec_<env_name>_<controller>`. For instance:
-
-- `dataset/rec_wm_π`: Policy playing in world model.
-- `dataset/rec_wm_H`: Human playing in world model.
-- `dataset/rec_test_H`: Human playing in test real environment.
-
-You can then use the "dataset mode" described in the next section to replay the stored episodes.
-
-<a name="dataset_mode"></a>
-### [⬆️](#quick_links) Dataset mode (add `-d`)
-
-**In the run folder**, to visualize the datasets contained in the `dataset` subfolder, add `-d` to switch to "dataset mode":
-
+The [default config](config/world_model_env/default.yaml) runs best on a machine with a CUDA GPU. The model also runs faster if compiled (but takes longer at startup).
 ```bash
-python src/play.py -d
+python src/play.py --compile
 ```
 
-You can use the controls described below to navigate the datasets and episodes.
+If you only have CPU or you would like the world model to run faster, you can change the [trainer](config/trainer.yaml#L5) file to use the [fast](config/world_model_env/fast.yaml) config (instead of the [default](config/world_model_env/default.yaml)) with reduced denoising steps to enable faster generation at lower quality.
 
-```txt
-Controls (dataset mode)
+To adjust the sampling parameters yourself (number of denoising steps, stochasticity, order, etc) of the trained diffusion world model, for instance to trade off sampling speed and quality, edit the file `config/world_model_env/default.yaml`.
 
-m   : next dataset (if multiple datasets, like recordings, etc)
-↑/↓ : next/previous episode
-←/→ : next/previous timestep in episodes
-PgUp: +10 timesteps
-PgDn: -10 timesteps
-⏎   : back to first timestep
-```
+## Data
 
-<a name="other_options"></a>
-### [⬆️](#quick_links) Other options, common to play/dataset modes
+For training we used the dataset `dataset_dm_scraped_dust2` from [Counter-Strike Deathmatch with Large-Scale Behavioural Cloning](https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/).
 
-```txt
---fps FPS             Target frame rate (default 15).
---size SIZE           Window size (default 800).
---no-header           Remove header.
-```
+We used a random test split of 500 episodes of 1000 steps (see [test_split.txt](test_split.txt)).
 
-<a name="structure"></a>
-## [⬆️](#quick_links) Run folder structure
+We used the remaining 5003 episodes to train the model. This corresponds to 5M frames, or 87h of gameplay.
 
-Each new run is located at `outputs/YYYY-MM-DD/hh-mm-ss/`. This folder is structured as follows:
+## Training time
 
-```txt
-outputs/YYYY-MM-DD/hh-mm-ss/
-│
-└─── checkpoints
-│   │   state.pt  # full training state
-│   │
-│   └─── agent_versions
-│       │   ...
-│       │   agent_epoch_00999.pt
-│       │   agent_epoch_01000.pt  # agent weights only
-│
-└─── config
-│   |   trainer.yaml
-|
-└─── dataset
-│   │
-│   └─── train
-│   |   │   info.pt
-│   |   │   ...
-|   |
-│   └─── test
-│       │   info.pt
-│       │   ...
-│
-└─── scripts
-│   │   resume.sh
-|   |   ...
-|
-└─── src
-|   |   main.py
-|   |   ...
-|
-└─── wandb
-    |   ...
-```
+The provided configuration took 12 days on a RTX 4090.
 
-<a name="results"></a>
-## [⬆️](#quick_links) Results
-
-The file [results/data/DIAMOND.json](results/data/DIAMOND.json) contains the results for each game and seed used in the paper.
-
-The DDPM code used for Section 5.1 of the paper can be found on the [ddpm](https://github.com/eloialonso/diamond/tree/ddpm) branch.
+---
 
 <a name="citation"></a>
 ## [⬆️](#quick-links) Citation
@@ -256,3 +71,4 @@ The DDPM code used for Section 5.1 of the paper can be found on the [ddpm](https
 - [https://github.com/huggingface/huggingface_hub](https://github.com/huggingface/huggingface_hub)
 - [https://github.com/google-research/rliable](https://github.com/google-research/rliable)
 - [https://github.com/pytorch/pytorch](https://github.com/pytorch/pytorch)
+- [https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/](https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/)

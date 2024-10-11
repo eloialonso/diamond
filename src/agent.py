@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import torch
 import torch.nn as nn
@@ -15,22 +15,28 @@ from utils import extract_state_dict
 @dataclass
 class AgentConfig:
     denoiser: DenoiserConfig
-    rew_end_model: RewEndModelConfig
-    actor_critic: ActorCriticConfig
+    upsampler: Optional[DenoiserConfig]
+    rew_end_model: Optional[RewEndModelConfig]
+    actor_critic: Optional[ActorCriticConfig]
     num_actions: int
 
     def __post_init__(self) -> None:
         self.denoiser.inner_model.num_actions = self.num_actions
-        self.rew_end_model.num_actions = self.num_actions
-        self.actor_critic.num_actions = self.num_actions
+        if self.upsampler is not None:
+            self.upsampler.inner_model.num_actions = self.num_actions
+        if self.rew_end_model is not None:
+            self.rew_end_model.num_actions = self.num_actions
+        if self.actor_critic is not None:
+            self.actor_critic.num_actions = self.num_actions
 
 
 class Agent(nn.Module):
     def __init__(self, cfg: AgentConfig) -> None:
         super().__init__()
         self.denoiser = Denoiser(cfg.denoiser)
-        self.rew_end_model = RewEndModel(cfg.rew_end_model)
-        self.actor_critic = ActorCritic(cfg.actor_critic)
+        self.upsampler = Denoiser(cfg.upsampler) if cfg.upsampler is not None else None
+        self.rew_end_model = RewEndModel(cfg.rew_end_model) if cfg.rew_end_model is not None else None
+        self.actor_critic = ActorCritic(cfg.actor_critic) if cfg.actor_critic is not None else None
 
     @property
     def device(self):
@@ -39,24 +45,30 @@ class Agent(nn.Module):
     def setup_training(
         self,
         sigma_distribution_cfg: SigmaDistributionConfig,
-        actor_critic_loss_cfg: ActorCriticLossConfig,
-        rl_env: Union[TorchEnv, WorldModelEnv],
+        sigma_distribution_cfg_upsampler: Optional[SigmaDistributionConfig],
+        actor_critic_loss_cfg: Optional[ActorCriticLossConfig],
+        rl_env: Optional[Union[TorchEnv, WorldModelEnv]],
     ) -> None:
         self.denoiser.setup_training(sigma_distribution_cfg)
-        self.actor_critic.setup_training(rl_env, actor_critic_loss_cfg)
+        if self.upsampler is not None:
+            self.upsampler.setup_training(sigma_distribution_cfg_upsampler)
+        if self.actor_critic is not None:
+            self.actor_critic.setup_training(rl_env, actor_critic_loss_cfg)
 
     def load(
         self,
         path_to_ckpt: Path,
         load_denoiser: bool = True,
+        load_upsampler: bool = True,
         load_rew_end_model: bool = True,
         load_actor_critic: bool = True,
     ) -> None:
         sd = torch.load(Path(path_to_ckpt), map_location=self.device)
-        sd = {k: extract_state_dict(sd, k) for k in ("denoiser", "rew_end_model", "actor_critic")}
         if load_denoiser:
-            self.denoiser.load_state_dict(sd["denoiser"])
-        if load_rew_end_model:
-            self.rew_end_model.load_state_dict(sd["rew_end_model"])
-        if load_actor_critic:
-            self.actor_critic.load_state_dict(sd["actor_critic"])
+            self.denoiser.load_state_dict(extract_state_dict(sd, "denoiser"))
+        if load_upsampler:
+            self.upsampler.load_state_dict(extract_state_dict(sd, "upsampler"))
+        if load_rew_end_model and self.rew_end_model is not None:
+            self.rew_end_model.load_state_dict(extract_state_dict(sd, "rew_end_model"))
+        if load_actor_critic and self.actor_critic is not None:
+            self.actor_critic.load_state_dict(extract_state_dict(sd, "actor_critic"))

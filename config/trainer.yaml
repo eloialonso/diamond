@@ -1,7 +1,8 @@
 defaults:
   - _self_
-  - env: atari
-  - agent: default
+  - env: csgo
+  - agent: csgo
+  - world_model_env: default
 
 hydra:
   job:
@@ -48,48 +49,32 @@ collection:
     num_final_episodes: 100
 
 static_dataset:
-  path: null  # if specified, will disable train/test data collection
+  path: ${env.path_data_low_res}
   ignore_sample_weights: True
 
 training:
   should: True
-  num_final_epochs: 50
-  cache_in_ram: True
-  num_workers_data_loaders: 0
+  num_final_epochs: 1500
+  cache_in_ram: False
+  num_workers_data_loaders: 4
   model_free: False # if True, turn off world_model training and RL in imagination
-  compile_wm: True
+  compile_wm: False
 
 evaluation:
   should: True
-  every: 10
-
-world_model_env:
-  _target_: envs.WorldModelEnvConfig
-  horizon: 15
-  num_batches_to_preload: 256
-  diffusion_sampler:
-    _target_: models.diffusion.DiffusionSamplerConfig
-    num_steps_denoising: 3
-    sigma_min: 2e-3
-    sigma_max: 5.0
-    rho: 7
-    order: 1  # 1: Euler, 2: Heun
-    s_churn: 0.0  # Amount of stochasticity
-    s_tmin: 0.0
-    s_tmax: ${eval:'float("inf")'}
-    s_noise: 1.0
+  every: 20
 
 denoiser:
   training:
-    num_autoregressive_steps: 1
+    num_autoregressive_steps: 4
     start_after_epochs: 0
-    steps_first_epoch: 10000
+    steps_first_epoch: 400
     steps_per_epoch: 400
-    sample_weights: [0.1, 0.1, 0.1, 0.7]
-    batch_size: 32
-    grad_acc_steps: 1
+    sample_weights: null
+    batch_size: 64
+    grad_acc_steps: 2
     lr_warmup_steps: 100
-    max_grad_norm: 1.0
+    max_grad_norm: 10.0
 
   optimizer:
     lr: 1e-4
@@ -98,48 +83,23 @@ denoiser:
   
   sigma_distribution: # log normal distribution for sigma during training
     _target_: models.diffusion.SigmaDistributionConfig
-    loc: -0.4
+    loc: -1.2
     scale: 1.2
     sigma_min: 2e-3
     sigma_max: 20
 
-rew_end_model:
+upsampler:
   training:
-    seq_length: ${eval:'${world_model_env.horizon} + ${agent.denoiser.inner_model.num_steps_conditioning}'}
+    num_autoregressive_steps: 1
     start_after_epochs: 0
-    steps_first_epoch: 10000
+    steps_first_epoch: 400
     steps_per_epoch: 400
-    sample_weights: ${denoiser.training.sample_weights}
-    batch_size: 32
-    grad_acc_steps: 1
+    sample_weights: null
+    batch_size: 8
+    grad_acc_steps: 4
     lr_warmup_steps: 100
-    max_grad_norm: 100.0
+    max_grad_norm: 10.0
 
-  optimizer:
-    lr: 1e-4
-    weight_decay: 1e-2
-    eps: 1e-8
+  optimizer: ${denoiser.optimizer}
+  sigma_distribution: ${denoiser.sigma_distribution}
 
-actor_critic:
-  training:
-    sample_weights: ${denoiser.training.sample_weights}
-    batch_size: 32
-    grad_acc_steps: 1
-    start_after_epochs: 0
-    steps_first_epoch: 5000
-    steps_per_epoch: 400
-    lr_warmup_steps: 100
-    max_grad_norm: 100.0
-
-  actor_critic_loss:
-    _target_: models.actor_critic.ActorCriticLossConfig
-    backup_every: 15
-    gamma: 0.985
-    lambda_: 0.95
-    weight_value_loss: 1.0
-    weight_entropy_loss: 0.001
-
-  optimizer:
-    lr: 1e-4
-    weight_decay: 0
-    eps: 1e-8

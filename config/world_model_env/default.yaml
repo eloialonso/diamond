@@ -1,0 +1,27 @@
+_target_: envs.WorldModelEnvConfig
+horizon: 1000
+num_batches_to_preload: 256
+diffusion_sampler_next_obs:
+  _target_: models.diffusion.DiffusionSamplerConfig
+  num_steps_denoising: 3
+  sigma_min: 2e-3
+  sigma_max: 5.0
+  rho: 7
+  order: 1  # 1: Euler, 2: Heun
+  s_churn: 0.0  # Amount of stochasticity
+  s_tmin: 0.0
+  s_tmax: ${eval:'float("inf")'}
+  s_noise: 1.0
+  s_cond: 0.005
+diffusion_sampler_upsampling:
+  _target_: models.diffusion.DiffusionSamplerConfig
+  num_steps_denoising: 10
+  sigma_min: 1
+  sigma_max: 5.0
+  rho: 7
+  order: 1  # 1: Euler, 2: Heun
+  s_churn: 10.0  # Amount of stochasticity
+  s_tmin: 1
+  s_tmax: 5
+  s_noise: 0.9
+  s_cond: 0

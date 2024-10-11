@@ -63,14 +63,18 @@ class DatasetTraverser:
         chunks = []
         for episode_id in range(self.dataset.num_episodes):
             episode = self.dataset.load_episode(episode_id)
-            chunks.extend(
-                make_segment(
+            segments = []
+            for i in range(math.ceil(len(episode) / self.chunk_size)):
+                start = i * self.chunk_size
+                stop = (i + 1) * self.chunk_size
+                segment = make_segment(
                     episode,
-                    SegmentId(episode_id, start=i * self.chunk_size, stop=(i + 1) * self.chunk_size),
+                    SegmentId(episode_id, start, stop),
                     should_pad=True,
                 )
-                for i in range(math.ceil(len(episode) / self.chunk_size))
-            )
+                segment_id_full_res = SegmentId(episode.info["original_file_id"], start, stop)
+                segment.info["full_res"] = self.dataset._dataset_full_res[segment_id_full_res].obs
+                chunks.append(segment)
             if chunks[-1].effective_size < 2:
                 chunks.pop()
 
@@ -80,3 +84,4 @@ class DatasetTraverser:
 
         if len(chunks) > 0:
             yield collate_segments_to_batch(chunks)
+

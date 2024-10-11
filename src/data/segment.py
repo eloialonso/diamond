@@ -1,13 +1,13 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import torch
 
 
 @dataclass
 class SegmentId:
-    episode_id: int
+    episode_id: Union[int, str]
     start: int
     stop: int
 

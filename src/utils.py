@@ -84,8 +84,9 @@ class StateDictMixin:
 @dataclass
 class CommonTools(StateDictMixin):
     denoiser: Any
-    rew_end_model: Any
-    actor_critic: Any
+    upsampler: Optional[Any] = None
+    rew_end_model: Optional[Any] = None
+    actor_critic: Optional[Any] = None
 
     def get(self, name: str) -> Any:
         return getattr(self, name)

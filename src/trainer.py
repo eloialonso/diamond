@@ -15,7 +15,7 @@ import wandb
 
 from agent import Agent
 from coroutines.collector import make_collector, NumToCollect
-from data import BatchSampler, collate_segments_to_batch, Dataset, DatasetTraverser
+from data import BatchSampler, collate_segments_to_batch, Dataset, DatasetTraverser, CSGOHdf5Dataset
 from envs import make_atari_env, WorldModelEnv
 from utils import (
     broadcast_if_needed,
@@ -86,24 +86,31 @@ class Trainer(StateDictMixin):
             wandb.save(str(path_config))
             shutil.copytree(src=root_dir / "src", dst="./src")
             shutil.copytree(src=root_dir / "scripts", dst="./scripts")
-
-        # Datasets
+        
+        if cfg.env.train.id == "csgo":
+            assert cfg.env.path_data_low_res is not None and cfg.env.path_data_full_res is not None, "Make sure to download CSGO data and set the relevant paths in cfg.env"
+            assert self._is_static_dataset
+            num_actions = cfg.env.num_actions
+            dataset_full_res = CSGOHdf5Dataset(Path(cfg.env.path_data_full_res))
+        
+        # Envs (atari only)
+        else:
+            if self._rank == 0:
+                train_env = make_atari_env(num_envs=cfg.collection.train.num_envs, device=self._device, **cfg.env.train)
+                test_env = make_atari_env(num_envs=cfg.collection.test.num_envs, device=self._device, **cfg.env.test)
+                num_actions = int(test_env.num_actions)
+            else:
+                num_actions = None
+            num_actions, = broadcast_if_needed(num_actions)
+            dataset_full_res = None
+    
         num_workers = cfg.training.num_workers_data_loaders
         use_manager = cfg.training.cache_in_ram and (num_workers > 0)
         p = Path(cfg.static_dataset.path) if self._is_static_dataset else Path("dataset")
-        self.train_dataset = Dataset(p / "train", "train_dataset", cfg.training.cache_in_ram, use_manager)
-        self.test_dataset = Dataset(p / "test", "test_dataset", cache_in_ram=True)
+        self.train_dataset = Dataset(p / "train", dataset_full_res, "train_dataset", cfg.training.cache_in_ram, use_manager)
+        self.test_dataset = Dataset(p / "test", dataset_full_res, "test_dataset", cache_in_ram=True)
         self.train_dataset.load_from_default_path()
         self.test_dataset.load_from_default_path()
-
-        # Envs
-        if self._rank == 0:
-            train_env = make_atari_env(num_envs=cfg.collection.train.num_envs, device=self._device, **cfg.env.train)
-            test_env = make_atari_env(num_envs=cfg.collection.test.num_envs, device=self._device, **cfg.env.test)
-            num_actions = int(test_env.num_actions)
-        else:
-            num_actions = None
-        num_actions, = broadcast_if_needed(num_actions)
 
         # Create models
         self.agent = Agent(instantiate(cfg.agent, num_actions=num_actions)).to(self._device)
@@ -131,9 +138,11 @@ class Trainer(StateDictMixin):
         def build_lr_sched(name: str) -> torch.optim.lr_scheduler.LambdaLR:
             return get_lr_sched(self.opt.get(name), getattr(cfg, name).training.lr_warmup_steps)
 
-        self._model_names = ["denoiser", "rew_end_model", "actor_critic"]
-        self.opt = CommonTools(*map(build_opt, self._model_names))
-        self.lr_sched = CommonTools(*map(build_lr_sched, self._model_names))
+        model_names = ["denoiser", "upsampler", "rew_end_model", "actor_critic"]
+        self._model_names = ["actor_critic"] if self._is_model_free else [name for name in model_names if getattr(self.agent, name) is not None]
+        
+        self.opt = CommonTools(**{name: build_opt(name) for name in self._model_names})
+        self.lr_sched = CommonTools(**{name: build_lr_sched(name) for name in self._model_names})
 
         # Data loaders
 
@@ -158,35 +167,56 @@ class Trainer(StateDictMixin):
         dl_denoiser_train = make_data_loader(batch_sampler=bs)
         dl_denoiser_test = DatasetTraverser(self.test_dataset, c.batch_size, seq_length)
 
-        c = cfg.rew_end_model.training
-        bs = make_batch_sampler(c.batch_size, c.seq_length, get_sample_weights(c.sample_weights), can_sample_beyond_end=True)
-        dl_rew_end_model_train = make_data_loader(batch_sampler=bs)
-        dl_rew_end_model_test = DatasetTraverser(self.test_dataset, c.batch_size, c.seq_length)
+        if self.agent.upsampler is not None:
+            c = cfg.upsampler.training
+            seq_length = cfg.agent.upsampler.inner_model.num_steps_conditioning + 1 + c.num_autoregressive_steps
+            bs = make_batch_sampler(c.batch_size, seq_length, get_sample_weights(c.sample_weights))
+            dl_upsampler_train = make_data_loader(batch_sampler=bs)
+            dl_upsampler_test = DatasetTraverser(self.test_dataset, c.batch_size, seq_length)
+        else:
+            dl_upsampler_train = dl_upsampler_test = None
 
-        self._data_loader_train = CommonTools(dl_denoiser_train, dl_rew_end_model_train, None)
-        self._data_loader_test = CommonTools(dl_denoiser_test, dl_rew_end_model_test, None)
+        if self.agent.rew_end_model is not None:
+            c = cfg.rew_end_model.training
+            bs = make_batch_sampler(c.batch_size, c.seq_length, get_sample_weights(c.sample_weights), can_sample_beyond_end=True)
+            dl_rew_end_model_train = make_data_loader(batch_sampler=bs)
+            dl_rew_end_model_test = DatasetTraverser(self.test_dataset, c.batch_size, c.seq_length)
+        else:
+            dl_rew_end_model_train = dl_rew_end_model_test = None
+
+        self._data_loader_train = CommonTools(dl_denoiser_train, dl_upsampler_train, dl_rew_end_model_train, None)
+        self._data_loader_test = CommonTools(dl_denoiser_test, dl_upsampler_test, dl_rew_end_model_test, None)
 
         # RL env
 
-        if self._is_model_free:
-            rl_env = make_atari_env(num_envs=cfg.actor_critic.training.batch_size, device=self._device, **cfg.env.train)
+        if self.agent.actor_critic is not None:
+            actor_critic_loss_cfg = instantiate(cfg.actor_critic.actor_critic_loss)
 
+            if self._is_model_free:
+                assert self.agent.actor_critic is not None
+                rl_env = make_atari_env(num_envs=cfg.actor_critic.training.batch_size, device=self._device, **cfg.env.train)
+
+            else:
+                c = cfg.actor_critic.training
+                sl = cfg.agent.denoiser.inner_model.num_steps_conditioning
+                if self.agent.upsampler is not None:
+                    sl = max(sl, cfg.agent.upsampler.inner_model.num_steps_conditioning)
+                bs = make_batch_sampler(c.batch_size, sl, get_sample_weights(c.sample_weights))
+                dl_actor_critic = make_data_loader(batch_sampler=bs)
+                wm_env_cfg = instantiate(cfg.world_model_env)
+                rl_env = WorldModelEnv(self.agent.denoiser, self.agent.upsampler, self.agent.rew_end_model, dl_actor_critic, wm_env_cfg)
+
+                if cfg.training.compile_wm:
+                    rl_env.predict_next_obs = torch.compile(rl_env.predict_next_obs, mode="reduce-overhead")
+                    rl_env.predict_rew_end = torch.compile(rl_env.predict_rew_end, mode="reduce-overhead")
         else:
-            c = cfg.actor_critic.training
-            sl = cfg.agent.denoiser.inner_model.num_steps_conditioning
-            bs = make_batch_sampler(c.batch_size, sl, get_sample_weights(c.sample_weights))
-            dl_actor_critic = make_data_loader(batch_sampler=bs)
-            wm_env_cfg = instantiate(cfg.world_model_env)
-            rl_env = WorldModelEnv(self.agent.denoiser, self.agent.rew_end_model, dl_actor_critic, wm_env_cfg)
-
-            if cfg.training.compile_wm:
-                rl_env.predict_next_obs = torch.compile(rl_env.predict_next_obs, mode="reduce-overhead")
-                rl_env.predict_rew_end = torch.compile(rl_env.predict_rew_end, mode="reduce-overhead")
+            actor_critic_loss_cfg = None
+            rl_env = None
 
         # Setup training
         sigma_distribution_cfg = instantiate(cfg.denoiser.sigma_distribution)
-        actor_critic_loss_cfg = instantiate(cfg.actor_critic.actor_critic_loss)
-        self.agent.setup_training(sigma_distribution_cfg, actor_critic_loss_cfg, rl_env)
+        sigma_distribution_cfg_upsampler = instantiate(cfg.upsampler.sigma_distribution) if self.agent.upsampler is not None else None
+        self.agent.setup_training(sigma_distribution_cfg, sigma_distribution_cfg_upsampler, actor_critic_loss_cfg, rl_env)
 
         # Training state (things to be saved/restored)
         self.epoch = 0
@@ -327,8 +357,7 @@ class Trainer(StateDictMixin):
         self.agent.train()
         self.agent.zero_grad()
         to_log = []
-        model_names = ["actor_critic"] if self._is_model_free else self._model_names
-        for name in model_names:
+        for name in self._model_names:
             cfg = getattr(self._cfg, name).training
             if self.epoch > cfg.start_after_epochs:
                 steps = cfg.steps_first_epoch if self.epoch == 1 else cfg.steps_per_epoch
@@ -339,8 +368,9 @@ class Trainer(StateDictMixin):
     def test_agent(self) -> Logs:
         self.agent.eval()
         to_log = []
-        model_names = [] if self._is_model_free else self._model_names[:-1]
-        for name in model_names:
+        for name in self._model_names:
+            if name == "actor_critic":
+                continue
             cfg = getattr(self._cfg, name).training
             if self.epoch > cfg.start_after_epochs:
                 to_log += self.test_component(name)

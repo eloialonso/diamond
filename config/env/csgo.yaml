@@ -1,0 +1,7 @@
+train:
+  id: csgo
+  size: [150, 280]
+num_actions: 51
+path_data_low_res: null # TO DEFINE
+path_data_full_res: null # TO DEFINE
+keymap: csgo

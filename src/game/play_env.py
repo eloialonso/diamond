@@ -8,8 +8,9 @@ import torch
 from torch import Tensor
 
 from agent import Agent
+from csgo.action_processing import CSGOAction, decode_csgo_action, encode_csgo_action, print_csgo_action
+from csgo.keymap import CSGO_KEYMAP
 from data import Dataset, Episode
-from game.keymap import ActionNames, Keymap
 from envs import WorldModelEnv
 
 
@@ -21,137 +22,113 @@ class PlayEnv:
     def __init__(
         self,
         agent: Agent,
-        envs: List[NamedEnv],
-        action_names: ActionNames,
-        keymap: Keymap,
+        wm_env: WorldModelEnv,
         recording_mode: bool,
         store_denoising_trajectory: bool,
         store_original_obs: bool,
     ) -> None:
         self.agent = agent
-        self.envs = envs
-        self.action_names = action_names
-        self.keymap = keymap
+        self.keymap = CSGO_KEYMAP
         self.recording_mode = recording_mode
         self.store_denoising_trajectory = store_denoising_trajectory
         self.store_original_obs = store_original_obs
-        self.is_human_player = False
+        self.is_human_player = True
         self.env_id = 0
-        self.env_name, self.env = self.envs[0]
-        self.obs, self.t, self.return_, self.hx_cx, self.ckpt_id, self.buffer, self.rec_dataset = (None,) * 7
+        self.env_name = "world model"
+        self.env = wm_env
+        self.obs, self.t, self.buffer, self.rec_dataset = (None,) * 4
 
     def print_controls(self) -> None:
-        print("\nControls (play mode):\n")
-        print("m : controller (policy/human)")
-        print("↑ : imagination horizon (+1)")
-        print("↓ : imagination horizon (-1)")
-        print(f"→ : next environment ({' → '.join([env_name for (env_name, _) in self.envs])})")
-        print(f"← : prev environment ({' ← '.join([env_name for (env_name, _) in self.envs])})")
+        print(" m  : switch control (human/replay)")
         print("\nEnvironment actions:\n")
-        for keys, idx in self.keymap.items():
-            key_names = [pygame.key.name(key) for key in keys]
-            key_names = ["⎵" if key_name == "space" else key_name for key_name in key_names]
-            print(f"{' + '.join(key_names)} : {self.action_names[idx]}")
+        for key, action_name in self.keymap.items():
+            if key is not None:
+                key_name = pygame.key.name(key)
+                key_name = "⎵" if key_name == "space" else key_name
+                print(f"{key_name} : {action_name}")
 
     def next_mode(self) -> bool:
         self.switch_controller()
         return True
 
     def next_axis_1(self) -> bool:
-        self.update_wm_horizon(+1)
-        return True
+        return False
 
     def prev_axis_1(self) -> bool:
-        self.update_wm_horizon(-1)
-        return True
+        return False
 
     def next_axis_2(self) -> bool:
-        self.switch_env(self.env_id + 1)
-        return True
+        return False
 
     def prev_axis_2(self) -> bool:
-        self.switch_env(self.env_id - 1)
-        return True
-
-    def is_wm_env(self) -> bool:
-        return isinstance(self.env, WorldModelEnv)
+        return False
 
     def print_env(self) -> None:
         print(f"> Environment: {self.env_name}")
 
-    def print_control(self) -> None:
-        print(f"> Control: {'human' if self.is_human_player else 'policy'}")
+    def str_control(self) -> str:
+        return "human" if self.is_human_player else "replay actions (test dataset)"
 
-    def switch_env(self, env_id: int) -> None:
-        self.env_id = env_id % len(self.envs)
-        self.env_name, self.env = self.envs[self.env_id]
-        self.print_env()
+    def print_control(self) -> None:
+        print(f"> Control: {self.str_control()}")
 
     def switch_controller(self) -> None:
         self.is_human_player = not self.is_human_player
         self.print_control()
 
     def update_wm_horizon(self, incr: int) -> None:
-        if self.is_wm_env():
-            self.env.horizon = max(1, self.env.horizon + incr)
+        self.env.horizon = max(1, self.env.horizon + incr)
 
     def reset_recording(self) -> None:
         self.buffer = defaultdict(list)
         self.buffer["info"] = defaultdict(list)
-        dir = Path("dataset") / f"rec_{self.env_name}_{'H' if self.is_human_player else 'π'}"
-        self.rec_dataset = Dataset(dir)
+        dir = Path("dataset") / f"rec_{self.env_name}_{'H' if self.is_human_player else 'R'}"
+        self.rec_dataset = Dataset(dir, None)
         self.rec_dataset.load_from_default_path()
 
     def reset(self) -> Tuple[Tensor, None]:
         self.obs, _ = self.env.reset()
-        self.t, self.return_, self.hx_cx = 0, 0, None
+        self.t = 0
         if self.recording_mode:
             self.reset_recording()
         return self.obs, None
 
     @torch.no_grad()
-    def step(self, act: int) -> Tuple[Tensor, Tensor, Tensor, Tensor, Dict[str, Any]]:
+    def step(self, csgo_action: CSGOAction) -> Tuple[Tensor, Tensor, Tensor, Tensor, Dict[str, Any]]:
         if self.is_human_player:
-            act = torch.tensor([act], device=self.agent.device)
+            action = encode_csgo_action(csgo_action, device=self.agent.device)
         else:
-            logits_act, value, self.hx_cx = self.agent.actor_critic.predict_act_value(self.obs, self.hx_cx)
-            dst = torch.distributions.categorical.Categorical(logits=logits_act)
-            act = dst.sample()
-            entropy = dst.entropy() / math.log(2)
-        entropy = None if self.is_human_player else f"{entropy.item():.2f}"
-        value = None if self.is_human_player else f"{value.item():.2f}"
-        next_obs, rew, end, trunc, env_info = self.env.step(act)
-        data = OneStepData(self.obs, act, rew, end, trunc)
-        self.return_ += rew.item()
-        control = "human" if self.is_human_player else "policy"
+            action = self.env.next_act[self.t - 1] if self.t > 0 else self.env.act_buffer[0, -1].clone()
+            csgo_action = decode_csgo_action(action.cpu())
+        next_obs, rew, end, trunc, env_info = self.env.step(action)
+
+        if not self.is_human_player and self.t == self.env.next_act.size(0):
+            trunc[0] = 1
+
+        data = OneStepData(self.obs, action, rew, end, trunc)
+        keys, mouse, clicks = print_csgo_action(csgo_action)
+        horizon = self.env.horizon if self.is_human_player else min(self.env.horizon, self.env.next_act.size(0))
         header = [
             [
                 f"Env     : {self.env_name}",
-                f"Control : {control}",
+                f"Control : {self.str_control()}",
                 f"Timestep: {self.t + 1}",
-                f"Horizon : {self.env.horizon}" if self.is_wm_env() else "",
-            ],
-            [
-                f"Trunc : {bool(trunc)}",
-                f"Done  : {bool(end)}",
-                f"Reward: {rew.item():.2f}",
-                f"Return: {self.return_:.2f}",
-            ],
-            [
-                f"Action : {self.action_names[act[0]]}",
-                f"Entropy: {entropy}",
-                f"Value  : {value}",
+                f"Horizon : {horizon}",
+                "",
+                f"Keys  : {keys}",
+                f"Mouse : {mouse}",
+                f"Clicks: {clicks}",
             ],
         ]
         info = {"header": header}
-
-        if end or trunc:
-            d = "Dead" if end else ("Horizon" if self.is_wm_env() else "Timed out")
-            print(f"[{d}] return = {self.return_} - length = {self.t + 1}.")
+        if "obs_low_res" in env_info:
+            info["obs_low_res"] = env_info["obs_low_res"]
 
         if self.recording_mode:
             for k, v in data._asdict().items():
                 self.buffer[k].append(v)
+            if "obs_low_res" in env_info:
+                self.buffer["info"]["obs_low_res"].append(env_info["obs_low_res"])
             if self.store_denoising_trajectory and "denoising_trajectory" in env_info:
                 self.buffer["info"]["denoising_trajectory"].append(env_info["denoising_trajectory"])
             if self.store_original_obs and "original_obs" in env_info:
