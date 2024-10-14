@@ -17,3 +17,7 @@ __pycache__/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+
+# pixi environments
+.pixi
+*.egg-info
