@@ -31,6 +31,15 @@ Alternatively, if you do not have miniconda installed you can use python [venv](
 >```
 And press `m` to take control (the policy is playing by default)!
 
+
+Alternatively, if you have [pixi](https://github.com/prefix-dev/pixi) installed:
+>```bash
+>git clone git@github.com:eloialonso/diamond.git
+>cd diamond
+>pixi run atari
+>```
+
+
 **Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
 
 ## CSGO
