@@ -28,7 +28,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h4845f30_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2024b-hc8b5060_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xz-5.2.6-h166bdaf_0.tar.bz2
+      - pypi: https://files.pythonhosted.org/packages/74/0a/b1e87c6470cf2993470f68f4a3d7d79c47a523f116a239c49ac090707aaa/ale_py-0.8.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d19459005ca000b6e7012f2f1ca597746cbcd1fbfe5e/antlr4-python3-runtime-4.9.3.tar.gz
+      - pypi: https://files.pythonhosted.org/packages/83/aa/e2695fa0c93b39cfe2065fcd189e7eb2db88f6e0922e932fc615827070da/AutoROM-0.4.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/a1/67/cc207fe30615001ce713e58dd975124985dc6f7e5ac1141f8bb342ebf3fe/AutoROM.accept-rom-license-0.6.1.tar.gz
       - pypi: https://files.pythonhosted.org/packages/12/90/3c9ff0512038035f59d279fddeb79f5f1eccd8859f06d6163c58798b9487/certifi-2024.8.30-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/f8/01/344ec40cf5d85c1da3c1f57566c59e0c9b56bcc5566c08804a95a6cc8257/charset_normalizer-3.4.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/00/2e/d53fa4befbf2cfa713304affc7ca780ce4fc1fd8710527771b58311a3229/click-8.1.7-py3-none-any.whl
@@ -44,6 +47,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/72/21/51cddb8850ed3f4dbc21e57c3dabc49e64d5577857ddda7b2eb0ffc2ec0e/huggingface_hub-0.17.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a6/b1/777bdecfafa1883fe97e41e91edee0b543e447d7ad69d133ab4e18689a9f/hydra_core-1.3.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/76/c6/c88e154df9c4e1a2a66ccf0005a88dfb2650c1dffb6f5ce603dfbd452ce3/idna-3.10-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/e1/6a/4604f9ae2fa62ef47b9de2fa5ad599589d28c9fd1d335f32759813dfa91e/importlib_resources-6.4.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/31/80/3a54838c3fb461f6fec263ebf3a3a41771bd05190238de3486aae8540c36/jinja2-3.1.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2e/0d/5d91ef2b4f30afa87483a3a7c108c777d144b1c42d7113459296a8a2bfa0/MarkupSafe-3.0.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/43/e3/7d92a15f894aa0c9c4b49b8ee9ac9850d6e63b03c9c32c0367a13ae62209/mpmath-1.3.0-py3-none-any.whl
@@ -74,6 +78,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/b3/aa/9f8dce2aec2e95d48c057ff3bcac48958cd15f67d4e9e80e74b46c324abf/sentry_sdk-2.16.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/79/e7/54b36be02aee8ad573be68f6f46fd62838735c2f007b22df50eb5e13a20d/setproctitle-1.3.3-cp310-cp310-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/ff/ae/f19306b5a221f6a436d8f2238d5b80925004093fa3edea59835b514d9057/setuptools-75.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/6f/d3/3d3787570f0cb16ba37a4fbd604498d8ee04ce987b7c8564a13d2c1858cf/Shimmy-0.2.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/5a/e7c31adbe875f2abbb91bd84cf2dc52d792b5a01506781dbcf25c91daf11/six-1.16.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a7/a5/10f97f73544edcdef54409f1d839f6049a0d79df68adbc1ceb24d1aaca42/smmap-5.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/99/ff/c87e0622b1dadea79d2fb0b25ade9ed98954c9033722eb707053d310d4f3/sympy-1.13.3-py3-none-any.whl
@@ -117,12 +122,49 @@ packages:
   size: 23621
   timestamp: 1650670423406
 - kind: pypi
+  name: ale-py
+  version: 0.8.1
+  url: https://files.pythonhosted.org/packages/74/0a/b1e87c6470cf2993470f68f4a3d7d79c47a523f116a239c49ac090707aaa/ale_py-0.8.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
+  sha256: c9b168eb88c87d0f3e2a778e6c5cdde4ad951d1ca8a6dc3d3679fd45398df7d1
+  requires_dist:
+  - numpy
+  - importlib-resources
+  - importlib-metadata>=4.10.0 ; python_full_version < '3.10'
+  - typing-extensions ; python_full_version < '3.11'
+  - pytest>=7.0 ; extra == 'test'
+  - gym~=0.23 ; extra == 'test'
+  requires_python: '>=3.7'
+- kind: pypi
   name: antlr4-python3-runtime
   version: 4.9.3
   url: https://files.pythonhosted.org/packages/3e/38/7859ff46355f76f8d19459005ca000b6e7012f2f1ca597746cbcd1fbfe5e/antlr4-python3-runtime-4.9.3.tar.gz
   sha256: f224469b4168294902bb1efa80a8bf7855f24c99aef99cbefc1bcd3cce77881b
   requires_dist:
   - typing ; python_full_version < '3.5'
+- kind: pypi
+  name: autorom
+  version: 0.4.2
+  url: https://files.pythonhosted.org/packages/83/aa/e2695fa0c93b39cfe2065fcd189e7eb2db88f6e0922e932fc615827070da/AutoROM-0.4.2-py3-none-any.whl
+  sha256: 719c9d363ef08391fdb7003d70df235b68f36de628d289a946c4a59a3adefa13
+  requires_dist:
+  - click
+  - requests
+  - tqdm
+  - importlib-resources ; python_full_version < '3.9'
+  - autorom-accept-rom-license ; extra == 'accept-rom-license'
+  requires_python: '>=3.6'
+- kind: pypi
+  name: autorom-accept-rom-license
+  version: 0.6.1
+  url: https://files.pythonhosted.org/packages/a1/67/cc207fe30615001ce713e58dd975124985dc6f7e5ac1141f8bb342ebf3fe/AutoROM.accept-rom-license-0.6.1.tar.gz
+  sha256: 0c905a708d634a076f686802f672817d3585259ce3be0bde8713a4fb59e3159e
+  requires_dist:
+  - click
+  - requests
+  - importlib-resources ; python_full_version < '3.9'
+  - ale-py ; extra == 'tests'
+  - multi-agent-ale-py ; extra == 'tests'
+  requires_python: '>=3.7'
 - kind: conda
   name: bzip2
   version: 1.0.8
@@ -563,6 +605,28 @@ packages:
   - pytest>=8.3.2 ; extra == 'all'
   - flake8>=7.1.1 ; extra == 'all'
   requires_python: '>=3.6'
+- kind: pypi
+  name: importlib-resources
+  version: 6.4.5
+  url: https://files.pythonhosted.org/packages/e1/6a/4604f9ae2fa62ef47b9de2fa5ad599589d28c9fd1d335f32759813dfa91e/importlib_resources-6.4.5-py3-none-any.whl
+  sha256: ac29d5f956f01d5e4bb63102a5a19957f1b9175e45649977264a1416783bb717
+  requires_dist:
+  - zipp>=3.1.0 ; python_full_version < '3.10'
+  - pytest-checkdocs>=2.4 ; extra == 'check'
+  - pytest-ruff>=0.2.1 ; sys_platform != 'cygwin' and extra == 'check'
+  - pytest-cov ; extra == 'cover'
+  - sphinx>=3.5 ; extra == 'doc'
+  - jaraco-packaging>=9.3 ; extra == 'doc'
+  - rst-linker>=1.9 ; extra == 'doc'
+  - furo ; extra == 'doc'
+  - sphinx-lint ; extra == 'doc'
+  - jaraco-tidelift>=1.4 ; extra == 'doc'
+  - pytest-enabler>=2.2 ; extra == 'enabler'
+  - pytest!=8.1.*,>=6 ; extra == 'test'
+  - zipp>=3.17 ; extra == 'test'
+  - jaraco-test>=5.4 ; extra == 'test'
+  - pytest-mypy ; extra == 'type'
+  requires_python: '>=3.8'
 - kind: pypi
   name: jinja2
   version: 3.1.4
@@ -1185,6 +1249,34 @@ packages:
   - importlib-metadata>=7.0.2 ; python_full_version < '3.10' and extra == 'type'
   - jaraco-develop>=7.21 ; sys_platform != 'cygwin' and extra == 'type'
   requires_python: '>=3.8'
+- kind: pypi
+  name: shimmy
+  version: 0.2.1
+  url: https://files.pythonhosted.org/packages/6f/d3/3d3787570f0cb16ba37a4fbd604498d8ee04ce987b7c8564a13d2c1858cf/Shimmy-0.2.1-py3-none-any.whl
+  sha256: 2d7d21c4ca679a64bb452e6a4232c6b0f5dba7589f5420454ddc1f0634334334
+  requires_dist:
+  - numpy>=1.18.0
+  - gymnasium>=0.27.0
+  - pettingzoo>=1.22 ; extra == 'all'
+  - gym>=0.21 ; extra == 'all'
+  - ale-py~=0.8.1 ; extra == 'all'
+  - dm-control>=1.0.10 ; extra == 'all'
+  - h5py>=3.7.0 ; extra == 'all'
+  - imageio ; extra == 'all'
+  - open-spiel>=1.2 ; extra == 'all'
+  - ale-py~=0.8.1 ; extra == 'atari'
+  - dm-control>=1.0.10 ; extra == 'dm-control'
+  - imageio ; extra == 'dm-control'
+  - h5py>=3.7.0 ; extra == 'dm-control'
+  - dm-control>=1.0.10 ; extra == 'dm-control-multi-agent'
+  - pettingzoo>=1.22 ; extra == 'dm-control-multi-agent'
+  - gym>=0.21 ; extra == 'gym'
+  - open-spiel>=1.2 ; extra == 'openspiel'
+  - pettingzoo>=1.22 ; extra == 'openspiel'
+  - pytest==7.1.3 ; extra == 'testing'
+  - pillow>=9.3.0 ; extra == 'testing'
+  - autorom[accept-rom-license]~=0.4.2 ; extra == 'testing'
+  requires_python: '>=3.7'
 - kind: pypi
   name: six
   version: 1.16.0

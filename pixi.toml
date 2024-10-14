@@ -7,14 +7,17 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
-atari = "git checkout main; python src/play.py --pretrained"
-csgo = "git checkout csgo; python src/play.py"
+# atari = "git checkout main; python src/play.py --pretrained"
+# csgo = "git checkout csgo; python src/play.py"
+
+atari = "python src/play.py --pretrained"
+csgo = "python src/play.py"
 
 [dependencies]
 python = "==3.10"
 
 [pypi-dependencies]
-gymnasium = ">=0.29.1,<0.30"
+gymnasium = {version=">=0.29.1,<0.30" ,extras=["atari","accept-rom-license"]}
 h5py = "==3.11.0"
 huggingface-hub="==0.17.2"
 hydra-core="==1.3"
