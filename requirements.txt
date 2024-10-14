@@ -1,4 +1,4 @@
-gymnasium[atari,accept-rom-license]==0.29.1
+gymnasium[atari,accept-rom-license]>=0.29.1
 h5py==3.11.0
 huggingface-hub==0.17.2
 hydra-core==1.3
