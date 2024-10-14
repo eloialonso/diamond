@@ -1,12 +1,20 @@
 # Diffusion for World Modeling: Visual Details Matter in Atari (NeurIPS 2024 Spotlight)
 
-**TL;DR** We introduce DIAMOND (DIffusion As a Model Of eNvironment Dreams), a reinforcement learning agent trained in a diffusion world model.
+[**TL;DR**] 💎 DIAMOND (DIffusion As a Model Of eNvironment Dreams) is a reinforcement learning agent trained entirely in a diffusion world model.
 
-[[Project Page]](https://diamond-wm.github.io) &nbsp; [[Paper]](https://arxiv.org/abs/2405.12399)
+🌍 [Project Page](https://diamond-wm.github.io) • 🤓 [Paper](https://arxiv.org/pdf/2405.12399) • 𝕏 [Atari thread](https://x.com/EloiAlonso1/status/1793916382779982120) • 𝕏 [CSGO thread](https://x.com/EloiAlonso1/status/1844803606064611771)
 
 <div align='center'>
-  Autoregressive imagination with DIAMOND on a subset of Atari games
-  <img alt="DIAMOND agent in WM" src="https://github.com/user-attachments/assets/c991cc3a-7c8a-44b0-826a-fb8177f27545">
+  RL agent playing in autoregressive imagination of Atari world models
+  <br>
+  <img alt="DIAMOND agent in WM" src="https://github.com/user-attachments/assets/eb6b72eb-73df-4178-8a3d-cdad80ff9152">
+
+</div>
+
+<div align='center'>
+  Human player in CSGO world model (full quality video <a href="https://diamond-wm.github.io/static/videos/grid.mp4">here</a>)
+  <br>
+  <img alt="DIAMOND agent in WM" src="https://github.com/user-attachments/assets/dcbdd523-ca22-46a9-bb7d-bcc52080fe00">
 </div>
 
 Quick install to try our [pretrained world models](#try) using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/):
@@ -17,18 +25,21 @@ Quick install to try our [pretrained world models](#try) using [miniconda](https
 >conda create -n diamond python=3.10
 >conda activate diamond
 >pip install -r requirements.txt
+>```
+
+For Atari (world model + RL agent)
+
+>```bash
 >python src/play.py --pretrained
 >```
 
-Alternatively, if you do not have miniconda installed you can use python [venv](https://docs.python.org/3/library/venv.html):
+For CSGO (world model only)
+
 >```bash
->git clone git@github.com:eloialonso/diamond.git
->cd diamond
->python3 -m venv diamond_env
->source activate ./diamond_env/bin/
->pip install -r requirements.txt
->python src/play.py --pretrained
+>git checkout csgo
+>python src/play.py
 >```
+
 And press `m` to take control (the policy is playing by default)!
 
 **Warning**: Atari ROMs will be downloaded with the dependencies, which means that you acknowledge that you have the license to use them.
@@ -229,13 +240,12 @@ The DDPM code used for Section 5.1 of the paper can be found on the [ddpm](https
 ## [⬆️](#quick-links) Citation
 
 ```text
-@misc{alonso2024diffusion,
+@inproceedings{alonso2024diffusionworldmodelingvisual,
       title={Diffusion for World Modeling: Visual Details Matter in Atari},
       author={Eloi Alonso and Adam Jelley and Vincent Micheli and Anssi Kanervisto and Amos Storkey and Tim Pearce and François Fleuret},
+      booktitle={Thirty-eighth Conference on Neural Information Processing Systems}}
       year={2024},
-      eprint={2405.12399},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+      url={https://arxiv.org/abs/2405.12399},
 }
 ```
 
