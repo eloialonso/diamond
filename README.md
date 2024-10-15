@@ -37,15 +37,28 @@ If you only have CPU or you would like the world model to run faster, you can ch
 
 To adjust the sampling parameters yourself (number of denoising steps, stochasticity, order, etc) of the trained diffusion world model, for instance to trade off sampling speed and quality, edit the file `config/world_model_env/default.yaml`.
 
-## Data
+## Training
 
-For training we used the dataset `dataset_dm_scraped_dust2` from [Counter-Strike Deathmatch with Large-Scale Behavioural Cloning](https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning/).
+**IMPORTANT**: Any issue related to the download of training data should be reported on the [dataset repo](https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning).
 
-We used a random test split of 500 episodes of 1000 steps (see [test_split.txt](test_split.txt)).
+We trained on the biggest dataset of the repo (`dataset_dm_scraped_dust2`), that corresponds to 5.5M frames, 95h of gameplay, and takes ~660Gb of disk space.
 
-We used the remaining 5003 episodes to train the model. This corresponds to 5M frames, or 87h of gameplay.
+- We used a random test split of 500 episodes of 1000 steps (specified in [test_split.txt](test_split.txt)).
+- We used the remaining 5003 episodes to train the model. This corresponds to 5M frames, or 87h of gameplay.
 
-## Training time
+To get the data ready for training on your machine:
+- **Step 1**: Download the `.tar` files from the `dataset_dm_scraped_dust2_tars` on the [OneDrive link](https://1drv.ms/u/s!AjG1JlThUkPgh1JEIxETxvaphzgC?e=2AJfA3) from the [dataset repo](https://github.com/TeaPearce/Counter-Strike_Behavioural_Cloning). 
+- **Step 2**: Use our [script](src/process_csgo_tar_files.py) to prepare the downloaded data for training, as follows:
+
+```bash
+python src/process_csgo_tar_files.py <folder_with_tar_files_from_step_one> <folder_to_store_processed_data>
+```
+
+Then edit [config/env/csgo.yaml](config/env/csgo.yaml) and set:
+- `path_data_low_res` to `<folder_to_store_processed_data>/low_res`
+- `path_data_full_res` to `<folder_to_store_processed_data>/full_res`
+
+You can then launch a training run with `python src/main.py`.
 
 The provided configuration took 12 days on a RTX 4090.
 
