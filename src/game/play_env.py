@@ -39,7 +39,6 @@ class PlayEnv:
         self.obs, self.t, self.buffer, self.rec_dataset = (None,) * 4
 
     def print_controls(self) -> None:
-        print(" m  : switch control (human/replay)")
         print("\nEnvironment actions:\n")
         for key, action_name in self.keymap.items():
             if key is not None:

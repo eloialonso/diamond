@@ -28,14 +28,14 @@ The final command will automatically download our trained CSGO diffusion world m
 
 When the download is complete, control actions will be printed in the terminal. Press Enter to start playing.
 
-The [default config](config/world_model_env/default.yaml) runs best on a machine with a CUDA GPU. The model also runs faster if compiled (but takes longer at startup).
+The default [fast config](config/world_model_env/fast.yaml) runs best on a machine with a CUDA GPU, but can also be run on CPU at reduced fps. The model also runs faster if compiled (but takes longer at startup).
 ```bash
 python src/play.py --compile
 ```
 
-If you only have CPU or you would like the world model to run faster, you can change the [trainer](config/trainer.yaml#L5) file to use the [fast](config/world_model_env/fast.yaml) config (instead of the [default](config/world_model_env/default.yaml)) with reduced denoising steps to enable faster generation at lower quality.
+To reproduce our videos, you can change the [trainer](config/trainer.yaml#L5) file to use the [higher_quality](config/world_model_env/higher_quality.yaml) config (instead of the [fast](config/world_model_env/fast.yaml) config) with increased denoising steps to enable higher quality generation at reduced speed (10fps on a RTX 3090 on our machine).
 
-To adjust the sampling parameters yourself (number of denoising steps, stochasticity, order, etc) of the trained diffusion world model, for instance to trade off sampling speed and quality, edit the file `config/world_model_env/default.yaml`.
+To adjust the sampling parameters yourself (number of denoising steps, stochasticity, order, etc) of the trained diffusion world model, for instance to trade off sampling speed and quality, edit the file `config/world_model_env/fast.yaml`.
 
 ## Training
 

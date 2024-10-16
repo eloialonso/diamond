@@ -24,12 +24,13 @@ class Game:
         self.fps = fps
         self.verbose = verbose
 
+        self.env.print_controls()
         print("\nControls:\n")
-        print("Esc : quit")
-        print(" ⏎  : reset env")
+        print(" m  : switch control (human/replay)") # Not for main as Game can use either PlayEnv or DatasetEnv
         print(" .  : pause/unpause")
         print(" e  : step-by-step (when paused)")
-        self.env.print_controls()
+        print(" ⏎  : reset env")
+        print("Esc : quit")
         print("\n")
         input("Press enter to start")
 
@@ -58,7 +59,7 @@ class Game:
             y_pos = 5 + idx_line * font_size
             assert (0 <= x_pos <= header_width) and (0 <= y_pos <= header_height)
             screen.blit(font.render(text, True, pygame.Color("white")), (x_header + x_pos, y_header + y_pos))
- 
+
         def draw_obs(obs, obs_low_res=None):
             assert obs.ndim == 4 and obs.size(0) == 1
             img = Image.fromarray(obs[0].add(1).div(2).mul(255).byte().permute(1, 2, 0).cpu().numpy())
@@ -120,7 +121,7 @@ class Game:
 
                 if event.type == pygame.KEYDOWN:
                     keys_pressed.append(event.key)
-                
+
                 elif event.type == pygame.KEYUP and event.key in keys_pressed:
                     keys_pressed.remove(event.key)
 
@@ -160,7 +161,7 @@ class Game:
 
             csgo_action = CSGOAction(keys_pressed, mouse_x, mouse_y, l_click, r_click)
             next_obs, rew, end, trunc, info = self.env.step(csgo_action)
-            
+
             ep_return += rew.item()
             ep_length += 1
 
