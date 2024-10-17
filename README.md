@@ -92,9 +92,9 @@ See [Visualization](#visualization) for more details about the available command
 <a name="launch"></a>
 ## [⬆️](#quick_links) Launch a training run
 
-To train with the hyperparameters used in the paper, launch:
+To train with the hyperparameters used in the paper on cuda:0, launch:
 ```bash
-python src/main.py env.train.id=BreakoutNoFrameskip-v4 common.device=cuda:0
+python src/main.py env.train.id=BreakoutNoFrameskip-v4 common.devices=0
 ```
 
 This creates a new folder for your run, located in `outputs/YYYY-MM-DD/hh-mm-ss/`.
