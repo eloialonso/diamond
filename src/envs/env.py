@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple
 
+import ale_py
 import gymnasium
 from gymnasium.vector import AsyncVectorEnv
 import numpy as np
