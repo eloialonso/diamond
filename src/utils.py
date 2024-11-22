@@ -231,6 +231,13 @@ def keep_agent_copies_every(
         get_path(max(0, epoch - 1)).unlink(missing_ok=True)
 
 
+def move_opt_to(opt: AdamW, device: torch.device):
+    for optimizer_metrics in opt.state.values():
+        for metric_name, metric in optimizer_metrics.items():
+            if torch.is_tensor(metric) and metric_name != "step":
+                optimizer_metrics[metric_name] = metric.to(device)
+
+
 def process_confusion_matrices_if_any_and_compute_classification_metrics(logs: Logs) -> None:
     cm = [x.pop("confusion_matrix") for x in logs if "confusion_matrix" in x]
     if len(cm) > 0:
