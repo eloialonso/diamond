@@ -114,7 +114,7 @@ class Trainer(StateDictMixin):
         self.test_dataset.load_from_default_path()
 
         # Create models
-        self.agent = Agent(instantiate(cfg.agent, num_actions=num_actions))
+        self.agent = Agent(instantiate(cfg.agent, num_actions=num_actions)).to(self._device)
         self._agent = build_ddp_wrapper(**self.agent._modules) if dist.is_initialized() else self.agent
 
         if cfg.initialization.path_to_ckpt is not None:
