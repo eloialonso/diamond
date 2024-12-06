@@ -20,7 +20,7 @@
 Quick install to try our [pretrained world models](#try) using [miniconda](https://docs.anaconda.com/free/miniconda/miniconda-install/):
 
 >```bash
->git clone git@github.com:eloialonso/diamond.git
+>git clone https://github.com/eloialonso/diamond.git
 >cd diamond
 >conda create -n diamond python=3.10
 >conda activate diamond
