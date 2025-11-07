@@ -1,0 +1,200 @@
+.action-space-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.editor-header {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text);
+}
+
+.editor-header h1 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.editor-content {
+  flex: 1;
+  padding: 24px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.editor-description {
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+
+.editor-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.editor-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.editor-column h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-secondary);
+}
+
+.add-action-form {
+  display: flex;
+  gap: 8px;
+}
+
+.add-action-form input {
+  flex: 1;
+  font-family: var(--font-mono);
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-card {
+  background-color: var(--color-bg-tertiary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.action-name {
+  font-family: var(--font-mono);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  flex: 1;
+}
+
+.action-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.action-edit input {
+  font-family: var(--font-mono);
+}
+
+.action-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.text-btn {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.text-btn:hover {
+  background-color: var(--color-bg-secondary);
+}
+
+.text-danger {
+  color: var(--color-error);
+}
+
+.validation-section {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+.validation-section h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.validation-item {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  font-size: 0.9375rem;
+}
+
+.validation-success {
+  color: var(--color-success);
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.validation-error {
+  color: var(--color-error);
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.combination-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.combination-form label {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.combination-form select {
+  width: 100%;
+}
+
+.combination-preview {
+  padding: 12px;
+  background-color: var(--color-bg-tertiary);
+  border-radius: var(--radius);
+  margin-top: 8px;
+}
+
+.combination-preview strong {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}

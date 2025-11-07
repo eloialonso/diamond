@@ -1,0 +1,213 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--color-border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-header h1 {
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.dashboard-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.9375rem;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text);
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 24px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.dashboard-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.dashboard-toolbar h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.dashboard-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.dashboard-filters select {
+  min-width: 200px;
+}
+
+.search-input {
+  flex: 1;
+  max-width: 400px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  margin-bottom: 12px;
+  color: var(--color-text);
+}
+
+.empty-state p {
+  color: var(--color-text-secondary);
+  margin-bottom: 24px;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.project-card {
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+.project-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-card-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  flex: 1;
+  word-break: break-word;
+}
+
+.status-indicator {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.status-indicator.status-complete {
+  color: var(--color-success);
+}
+
+.status-indicator.status-in_progress {
+  color: var(--color-warning);
+}
+
+.status-indicator.status-not_started {
+  color: var(--color-text-secondary);
+}
+
+.project-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--color-text-secondary);
+}
+
+.project-card-stats {
+  display: flex;
+  gap: 16px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  padding: 8px 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.project-card-status {
+  min-height: 24px;
+}
+
+.status-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.project-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.project-card-actions button {
+  flex: 1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.form-group input {
+  width: 100%;
+}
+
+.error-text {
+  color: var(--color-error);
+  font-size: 0.875rem;
+}
+
+.warning-text {
+  color: var(--color-warning);
+  font-weight: 500;
+}
+
+.delete-confirmation ul {
+  list-style-position: inside;
+  color: var(--color-text-secondary);
+}
+
+.delete-confirmation strong {
+  color: var(--color-text);
+}
