@@ -20,6 +20,8 @@ export interface Branch {
   name: string;
   keyframes: Keyframe[];
   transitions: Transition[];
+  parentBranchId?: string; // ID of the parent branch (if this is a diverging branch)
+  branchPointKeyframeId?: string; // ID of the keyframe where this branch diverges
 }
 
 export interface Keyframe {

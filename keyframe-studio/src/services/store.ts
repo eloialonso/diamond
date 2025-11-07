@@ -189,25 +189,49 @@ export const useStore = create<AppState>((set, get) => ({
 
   // Branch actions
   createBranch: (name: string, fromKeyframeId?: string) => {
-    const { currentProject } = get();
+    const { currentProject, currentBranch } = get();
     if (!currentProject) return;
 
     const branchId = generateId();
-    const kf1Id = generateId();
+    let newBranch: Branch;
 
-    const newBranch: Branch = {
-      id: branchId,
-      name,
-      keyframes: [{
-        id: kf1Id,
-        branchId,
-        timestamp: fromKeyframeId ? 0 : 0,
-        image: { path: '', width: 1280, height: 720 },
-        action: '',
-        uiState: {}
-      }],
-      transitions: []
-    };
+    if (fromKeyframeId && currentBranch) {
+      // Creating a diverging branch from a specific keyframe
+      const branchPointKeyframe = currentBranch.keyframes.find(k => k.id === fromKeyframeId);
+      if (!branchPointKeyframe) return;
+
+      // Create branch with parent information
+      newBranch = {
+        id: branchId,
+        name,
+        parentBranchId: currentBranch.id,
+        branchPointKeyframeId: fromKeyframeId,
+        keyframes: [{
+          id: generateId(),
+          branchId,
+          timestamp: branchPointKeyframe.timestamp + 10, // Start 10s after branch point
+          image: { path: '', width: 1280, height: 720 },
+          action: '',
+          uiState: {}
+        }],
+        transitions: []
+      };
+    } else {
+      // Creating an independent root branch
+      newBranch = {
+        id: branchId,
+        name,
+        keyframes: [{
+          id: generateId(),
+          branchId,
+          timestamp: 0,
+          image: { path: '', width: 1280, height: 720 },
+          action: '',
+          uiState: {}
+        }],
+        transitions: []
+      };
+    }
 
     const updatedProject = {
       ...currentProject,

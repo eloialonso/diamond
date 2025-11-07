@@ -65,12 +65,69 @@
   margin-bottom: 16px;
 }
 
+.timeline-container {
+  display: flex;
+  flex-direction: column;
+  overflow-x: auto;
+  padding: 20px 0;
+}
+
+.branch-tree {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.branch-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--radius);
+  transition: background-color 0.2s ease;
+}
+
+.branch-timeline.active {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 3px solid var(--color-primary);
+}
+
+.branch-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.branch-name {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.switch-branch-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  font-size: 0.75rem;
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.switch-branch-btn:hover {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
 .timeline {
   display: flex;
   align-items: center;
   gap: 0;
   overflow-x: auto;
-  padding: 20px 0;
+  padding: 10px 0;
 }
 
 .keyframe-node {
@@ -96,6 +153,21 @@
 .keyframe-node.selected {
   border-color: var(--color-primary);
   background-color: rgba(59, 130, 246, 0.1);
+}
+
+.keyframe-node.shared {
+  opacity: 0.5;
+  cursor: default;
+  border-style: dashed;
+}
+
+.keyframe-node.editable {
+  cursor: pointer;
+}
+
+.keyframe-node.editable:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
 }
 
 .keyframe-label {
@@ -124,6 +196,34 @@
 
 .transition-line.selected {
   background-color: var(--color-primary);
+}
+
+.transition-line.shared {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.transition-line.editable {
+  cursor: pointer;
+}
+
+.branch-point-indicator {
+  flex-shrink: 0;
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 .transition-duration {

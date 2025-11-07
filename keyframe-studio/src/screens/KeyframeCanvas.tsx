@@ -99,6 +99,126 @@ export const KeyframeCanvas: React.FC = () => {
 
   const totalDuration = currentBranch.transitions.reduce((sum, t) => sum + t.duration, 0);
 
+  // Get all keyframes from parent branches up to the branch point
+  const getSharedKeyframes = (branch: typeof currentBranch) => {
+    if (!branch.parentBranchId || !branch.branchPointKeyframeId) return [];
+
+    const parentBranch = currentProject.branches.find(b => b.id === branch.parentBranchId);
+    if (!parentBranch) return [];
+
+    const branchPointIndex = parentBranch.keyframes.findIndex(k => k.id === branch.branchPointKeyframeId);
+    if (branchPointIndex === -1) return [];
+
+    // Return keyframes up to and including the branch point
+    return parentBranch.keyframes.slice(0, branchPointIndex + 1);
+  };
+
+  // Render a branch timeline
+  const renderBranch = (branch: typeof currentBranch, isCurrentBranch: boolean, indentLevel: number = 0) => {
+    const sharedKeyframes = getSharedKeyframes(branch);
+    const branchKeyframes = [...branch.keyframes].sort((a, b) => a.timestamp - b.timestamp);
+
+    return (
+      <div
+        key={branch.id}
+        className={`branch-timeline ${isCurrentBranch ? 'active' : ''}`}
+        style={{ marginLeft: `${indentLevel * 40}px` }}
+      >
+        <div className="branch-label">
+          <span className="branch-name">{branch.name}</span>
+          {!isCurrentBranch && (
+            <button
+              className="switch-branch-btn"
+              onClick={() => switchBranch(branch.id)}
+            >
+              Switch
+            </button>
+          )}
+        </div>
+
+        <div className="timeline">
+          {/* Render shared keyframes (grayed out, non-editable) */}
+          {sharedKeyframes.map((kf, index) => {
+            const nextKf = sharedKeyframes[index + 1];
+            const parentBranch = currentProject.branches.find(b => b.id === branch.parentBranchId);
+            const transition = parentBranch && nextKf ?
+              parentBranch.transitions.find(t => t.sourceKeyframe === kf.id && t.destKeyframe === nextKf.id) : null;
+
+            return (
+              <React.Fragment key={`shared-${kf.id}`}>
+                <div className="keyframe-node shared">
+                  <div className="keyframe-label">KF{index + 1}</div>
+                  <div className="keyframe-time">{kf.timestamp}s</div>
+                </div>
+
+                {transition && nextKf && (
+                  <div className="transition-line shared">
+                    <div className="transition-duration">{transition.duration}s</div>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+
+          {/* Branch point indicator */}
+          {sharedKeyframes.length > 0 && (
+            <div className="branch-point-indicator">⤷</div>
+          )}
+
+          {/* Render this branch's own keyframes */}
+          {branchKeyframes.map((kf, index) => {
+            const nextKf = branchKeyframes[index + 1];
+            const transition = nextKf ? getTransition(kf.id, nextKf.id) : null;
+            const globalIndex = sharedKeyframes.length + index;
+
+            return (
+              <React.Fragment key={kf.id}>
+                <div
+                  className={`keyframe-node ${selectedKeyframe?.id === kf.id ? 'selected' : ''} ${isCurrentBranch ? 'editable' : ''}`}
+                  onClick={() => isCurrentBranch && selectKeyframe(kf)}
+                >
+                  <div className="keyframe-label">KF{globalIndex + 1}</div>
+                  <div className="keyframe-time">{kf.timestamp}s</div>
+                </div>
+
+                {transition && nextKf && (
+                  <div
+                    className={`transition-line ${
+                      selectedTransition?.source.id === kf.id &&
+                      selectedTransition?.dest.id === nextKf.id
+                        ? 'selected'
+                        : ''
+                    } ${isCurrentBranch ? 'editable' : ''}`}
+                    onClick={() => isCurrentBranch && selectTransition(kf, nextKf)}
+                  >
+                    <div className="transition-duration">{transition.duration}s</div>
+                  </div>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </div>
+
+        {/* Render child branches */}
+        {currentProject.branches
+          .filter(b => b.parentBranchId === branch.id)
+          .map(childBranch => renderBranch(childBranch, childBranch.id === currentBranch.id, indentLevel + 1))}
+      </div>
+    );
+  };
+
+  // Render the complete branch tree
+  const renderBranchTree = () => {
+    // Find root branches (no parent)
+    const rootBranches = currentProject.branches.filter(b => !b.parentBranchId);
+
+    return (
+      <div className="branch-tree">
+        {rootBranches.map(branch => renderBranch(branch, branch.id === currentBranch.id, 0))}
+      </div>
+    );
+  };
+
   return (
     <div className="keyframe-canvas">
       <header className="canvas-header">
@@ -162,37 +282,9 @@ export const KeyframeCanvas: React.FC = () => {
 
       <div className="canvas-timeline">
         <h3>TIMELINE ({totalDuration} seconds)</h3>
-        <div className="timeline">
-          {sortedKeyframes.map((kf, index) => {
-            const nextKf = sortedKeyframes[index + 1];
-            const transition = nextKf ? getTransition(kf.id, nextKf.id) : null;
-
-            return (
-              <React.Fragment key={kf.id}>
-                <div
-                  className={`keyframe-node ${selectedKeyframe?.id === kf.id ? 'selected' : ''}`}
-                  onClick={() => selectKeyframe(kf)}
-                >
-                  <div className="keyframe-label">KF{index + 1}</div>
-                  <div className="keyframe-time">{kf.timestamp}s</div>
-                </div>
-
-                {transition && nextKf && (
-                  <div
-                    className={`transition-line ${
-                      selectedTransition?.source.id === kf.id &&
-                      selectedTransition?.dest.id === nextKf.id
-                        ? 'selected'
-                        : ''
-                    }`}
-                    onClick={() => selectTransition(kf, nextKf)}
-                  >
-                    <div className="transition-duration">{transition.duration}s</div>
-                  </div>
-                )}
-              </React.Fragment>
-            );
-          })}
+        <div className="timeline-container">
+          {/* Render all branches in a tree structure */}
+          {renderBranchTree()}
         </div>
       </div>
 
@@ -326,6 +418,19 @@ export const KeyframeCanvas: React.FC = () => {
 
       <div className="canvas-actions">
         <Button onClick={handleAddKeyframe}>+ Add Keyframe After</Button>
+        {selectedKeyframe && (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              const branchName = prompt('Enter new branch name:');
+              if (branchName) {
+                createBranch(branchName, selectedKeyframe.id);
+              }
+            }}
+          >
+            Insert Branch Point
+          </Button>
+        )}
       </div>
     </div>
   );
