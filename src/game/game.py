@@ -1,4 +1,6 @@
 from collections import OrderedDict
+import ctypes
+import sys
 from typing import Tuple, Union
 
 import numpy as np
@@ -8,6 +10,30 @@ from PIL import Image
 from .dataset_env import DatasetEnv
 from .keymap import Keymap
 from .play_env import PlayEnv
+
+
+WINDOWS_VIRTUAL_KEYS = {
+    pygame.K_SPACE: 0x20,
+    pygame.K_w: 0x57,
+    pygame.K_a: 0x41,
+    pygame.K_s: 0x53,
+    pygame.K_d: 0x44,
+    pygame.K_LEFT: 0x25,
+    pygame.K_UP: 0x26,
+    pygame.K_RIGHT: 0x27,
+    pygame.K_DOWN: 0x28,
+    pygame.K_PAGEUP: 0x21,
+    pygame.K_PAGEDOWN: 0x22,
+}
+
+
+def is_key_pressed_windows(key: int) -> bool:
+    if sys.platform != "win32":
+        return False
+    virtual_key = WINDOWS_VIRTUAL_KEYS.get(key)
+    if virtual_key is None:
+        return False
+    return bool(ctypes.windll.user32.GetAsyncKeyState(virtual_key) & 0x8000)
 
 
 class Game:
@@ -115,6 +141,13 @@ class Game:
                 pressed = pygame.key.get_pressed()
                 for keys, action in self.keymap.items():
                     if all([pressed[key] for key in keys]):
+                        break
+                else:
+                    action = 0
+
+            if action == 0:
+                for keys, action in self.keymap.items():
+                    if all([is_key_pressed_windows(key) for key in keys]):
                         break
                 else:
                     action = 0
