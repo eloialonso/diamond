@@ -41,7 +41,7 @@ class DiffusionSampler:
             if gamma > 0:
                 eps = torch.randn_like(x) * self.cfg.s_noise
                 x = x + eps * (sigma_hat**2 - sigma**2) ** 0.5
-            denoised = self.denoiser.denoise(x, sigma, prev_obs, prev_act)
+            denoised = self.denoiser.denoise(x, sigma_hat, prev_obs, prev_act)
             d = (x - denoised) / sigma_hat
             dt = next_sigma - sigma_hat
             if self.cfg.order == 1 or next_sigma == 0:
