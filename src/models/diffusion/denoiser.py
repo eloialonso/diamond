@@ -113,7 +113,8 @@ class Denoiser(nn.Module):
             model_output = self.compute_model_output(noisy_next_obs, obs, act, cs)
 
             target = (next_obs - cs.c_skip * noisy_next_obs) / cs.c_out
-            loss += F.mse_loss(model_output[mask], target[mask])
+            prediction = model_output[mask]
+            loss += F.mse_loss(prediction, target[mask], reduction="sum") / max(1, prediction.numel())
 
             denoised = self.wrap_model_output(noisy_next_obs, model_output, cs)
             all_obs[:, n + i] = denoised
